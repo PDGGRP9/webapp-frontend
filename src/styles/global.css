@@ -17,7 +17,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { min-height: 100%; }
+html, body, #root { min-height: 100%; }
 body {
   margin: 0;
   color: var(--text);
@@ -102,6 +102,7 @@ h3 { font-size: 1.15rem; }
 .auth-copy p:last-child { margin-top: 0.8rem; color: var(--muted); line-height: 1.6; }
 .auth-form { display: grid; gap: 0.8rem; }
 .auth-form label, .controls { display: grid; gap: 0.45rem; }
+.auth-form a { color: var(--accent); }
 input, select, button {
   font: inherit;
 }
@@ -129,9 +130,13 @@ input:focus, select:focus { border-color: rgba(90, 228, 199, 0.8); box-shadow: 0
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   color: #05111f;
   font-weight: 700;
+  border: none;
 }
+.primary-btn:disabled { opacity: 0.6; cursor: progress; }
 .ghost-btn.danger { color: #ffd4dc; }
 .primary-btn:hover, .ghost-btn:hover, .nav-btn:hover, .segment:hover { transform: translateY(-1px); }
+
+.nav-btn { text-decoration: none; display: inline-flex; align-items: center; }
 
 .app-shell { display: grid; gap: 1rem; }
 .nav {
@@ -140,7 +145,7 @@ input:focus, select:focus { border-color: rgba(90, 228, 199, 0.8); box-shadow: 0
   gap: 1rem;
   padding: 1rem;
 }
-.nav-group { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.nav-group { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: center; }
 .nav-btn.active, .segment.active {
   background: rgba(90, 228, 199, 0.16);
   border-color: rgba(90, 228, 199, 0.4);
@@ -151,7 +156,7 @@ input:focus, select:focus { border-color: rgba(90, 228, 199, 0.8); box-shadow: 0
 .metric-card small { display: block; margin-top: 0.3rem; }
 
 .panel { display: grid; gap: 1rem; }
-.panel-header { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
+.panel-header { display: flex; justify-content: space-between; gap: 1rem; align-items: start; flex-wrap: wrap; }
 .controls { justify-items: end; }
 .segmented { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .segment { padding: 0.65rem 0.9rem; }
@@ -168,6 +173,7 @@ input:focus, select:focus { border-color: rgba(90, 228, 199, 0.8); box-shadow: 0
   background: rgba(255, 255, 255, 0.04);
   font-size: 0.82rem;
 }
+.topbar-status { display: flex; align-items: center; gap: 0.5rem; }
 .status-dot {
   width: 0.7rem;
   height: 0.7rem;
@@ -201,18 +207,38 @@ th, td {
 }
 th { color: var(--muted); font-size: 0.84rem; font-weight: 600; }
 
-#chart {
+.chart-wrap { width: 100%; }
+.chart-svg, .chart-empty svg {
   width: 100%;
   height: auto;
   min-height: 300px;
   overflow: visible;
 }
+.chart-svg:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 4px; border-radius: 12px; }
 .chart-grid { stroke: rgba(255, 255, 255, 0.08); stroke-width: 1; }
 .chart-axis { stroke: rgba(255, 255, 255, 0.16); stroke-width: 1.2; }
 .chart-label { fill: var(--muted); font-size: 13px; }
-.chart-path { fill: none; stroke: var(--accent); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
-.chart-point { fill: #05111f; stroke: var(--accent-2); stroke-width: 3; }
-.chart-legend { color: var(--muted); font-size: 0.95rem; }
+.chart-path { fill: none; stroke: var(--accent); stroke-width: 2px; stroke-linecap: round; stroke-linejoin: round; }
+.chart-point { fill: var(--accent); stroke: var(--bg); stroke-width: 2px; }
+.chart-point-active { fill: var(--accent-2); }
+.chart-end-label { fill: var(--text); font-size: 14px; font-weight: 600; }
+.chart-crosshair { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
+.chart-tooltip-bg { fill: var(--surface-strong); stroke: var(--border); stroke-width: 1; }
+.chart-tooltip-value { fill: var(--text); font-size: 15px; font-weight: 700; }
+.chart-tooltip-date { fill: var(--muted); font-size: 11px; }
+.chart-legend { color: var(--muted); font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.table-toggle { padding: 0.5rem 0.85rem; font-size: 0.85rem; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.page-loading { padding: 3rem; text-align: center; color: var(--muted); }
 
 .hidden { display: none !important; }
 .error { color: #fecaca; }
