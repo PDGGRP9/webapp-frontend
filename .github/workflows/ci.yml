@@ -15,28 +15,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: "3.10"
+          node-version: "22"
+          cache: "npm"
 
-      - name: Validate static site contract
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          html = Path('index.html').read_text(encoding='utf-8')
-          required = [
-              'loginView',
-              'appShell',
-              'dashboardView',
-              'statsView',
-              'app.js',
-              'styles.css',
-          ]
-          missing = [item for item in required if item not in html]
-          if missing:
-              raise SystemExit(f'Missing required markers: {missing}')
-          PY
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run test
+      - run: npm run build
 
   build:
     needs: test
