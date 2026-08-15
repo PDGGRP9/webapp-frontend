@@ -35,3 +35,16 @@ export function filterByRange(records: Measurement[], range: RangeKey): Measurem
   const thresholdMs = Date.now() - RANGE_HOURS[range] * 60 * 60 * 1000;
   return records.filter((record) => new Date(record.captured_at).getTime() >= thresholdMs);
 }
+
+export function metricStats(
+  records: Measurement[],
+  key: "heart_rate_bpm" | "spo2_percent" | "step_count" | "signal_quality",
+): { min: number | null; avg: number | null; max: number | null } {
+  const values = records.map((record) => Number(record[key])).filter((value) => Number.isFinite(value));
+  if (!values.length) return { min: null, avg: null, max: null };
+  return {
+    min: Math.min(...values),
+    avg: values.reduce((sum, value) => sum + value, 0) / values.length,
+    max: Math.max(...values),
+  };
+}

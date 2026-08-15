@@ -34,3 +34,30 @@ export function metricLabel(metric: MetricKey): string {
 export function metricSuffix(metric: MetricKey): string {
   return METRIC_SUFFIXES[metric];
 }
+
+export function timeAgo(value: string | null | undefined): string {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  const seconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
+  if (seconds < 60) return `il y a ${seconds} s`;
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  const days = Math.round(hours / 24);
+  return `il y a ${days} j`;
+}
+
+export function headerDate(date: Date = new Date()): string {
+  const day = date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+  const time = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  return `${day.charAt(0).toUpperCase()}${day.slice(1)} · ${time}`;
+}
+
+export function initials(...parts: (string | null | undefined)[]): string {
+  const letters = parts
+    .filter((part): part is string => Boolean(part && part.trim()))
+    .map((part) => part.trim()[0]!.toUpperCase());
+  return letters.slice(0, 2).join("") || "?";
+}

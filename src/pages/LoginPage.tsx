@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import "../styles/login.css";
 
 export function LoginPage() {
   const { apiBaseUrl: defaultApiBaseUrl, login } = useAuth();
@@ -27,61 +28,72 @@ export function LoginPage() {
   }
 
   return (
-    <>
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Bracelet Connecte</p>
-          <h1>Console santé temps réel</h1>
-        </div>
-      </header>
-      <main className="layout">
-        <section className="auth-panel card">
-          <div className="auth-copy">
-            <p className="eyebrow">Connexion</p>
-            <h2>Accède à tes données de santé</h2>
-            <p>Le front garde un token signé en local et interroge le back-end pour afficher les dernières mesures.</p>
+    <main className="login-page">
+      <div className="login-card">
+        <header className="login-topbar">
+          <span className="login-tag">Projet PDG </span>
+          <span className="login-tag login-tag-outline">Open source</span>
+        </header>
+
+        <section className="login-hero">
+          <h1>Bracelet connecté</h1>
+          <p className="login-tagline">Open source. Sans abonnement. Sans espion.</p>
+          <p className="login-note">
+            Le front garde un token signé en local et interroge le back-end pour afficher les dernières mesures.
+          </p>
+          <div className="login-pulse" aria-hidden="true">
+            <svg viewBox="0 0 800 40" preserveAspectRatio="none">
+              <path d="M0 20 H72 l6 0 l6 -14 l7 28 l7 -22 l6 8 H200 H272 l6 0 l6 -14 l7 28 l7 -22 l6 8 H400 H472 l6 0 l6 -14 l7 28 l7 -22 l6 8 H600 H672 l6 0 l6 -14 l7 28 l7 -22 l6 8 H800" />
+            </svg>
           </div>
-          <form className="auth-form" onSubmit={handleSubmit}>
-            <label>
-              URL du back-end
-              <input
-                type="url"
-                required
-                placeholder="http://localhost:8000"
-                value={apiBaseUrl}
-                onChange={(event) => setApiBaseUrl(event.target.value)}
-              />
-            </label>
-            <label>
-              Email
-              <input
-                type="email"
-                required
-                placeholder="demo@example.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-              />
-            </label>
-            <label>
-              Mot de passe
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-              />
-            </label>
-            <button className="primary-btn" type="submit" disabled={isSubmitting}>
-              Se connecter
-            </button>
-            <p className="helper">{hint}</p>
-            <p className="helper">
-              Pas de compte ? <Link to="/register">Créer un compte</Link>
-            </p>
-          </form>
         </section>
-      </main>
-    </>
+
+        <form className="login-form" onSubmit={handleSubmit}>
+          <label className="login-field">
+            <span>Email</span>
+            <input
+              type="email"
+              required
+              placeholder="prenom.nom@exemple.ch"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </label>
+          <label className="login-field">
+            <span>Mot de passe</span>
+            <input
+              type="password"
+              required
+              placeholder="••••••••••"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          </label>
+          <label className="login-field login-field-small">
+            <span>URL du back-end</span>
+            <input
+              type="url"
+              required
+              placeholder="http://localhost:8000"
+              value={apiBaseUrl}
+              onChange={(event) => setApiBaseUrl(event.target.value)}
+            />
+          </label>
+
+          <button className="login-btn" type="submit" disabled={isSubmitting}>
+            Se connecter
+          </button>
+          <p className="login-hint">{hint}</p>
+          <div className="login-links">
+            <a href="#">Mot de passe oublié ?</a>
+            <Link to="/register">Créer un compte</Link>
+          </div>
+        </form>
+
+        <footer className="login-footer">Tes données t'appartiennent</footer>
+      </div>
+    </main>
   );
 }

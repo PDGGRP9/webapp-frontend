@@ -1,0 +1,559 @@
+.appx-page {
+  --lime: #EBFD72;
+  --lime-soft: rgba(235, 253, 114, 0.14);
+  --lime-faint: rgba(235, 253, 114, 0.07);
+  --ink: #141a05;
+  --ink-soft: #3a4416;
+  --bg: #0e1204;
+  --card: #171e07;
+  --card-2: #1d2609;
+  --line: rgba(235, 253, 114, 0.16);
+  --text: #f4ffcf;
+  --muted: #a9b87c;
+  --danger: #ff9c8a;
+  /* Retint the shared LineChart component (built against global.css's teal
+     vars) by shadowing the vars it reads — resolution follows DOM position,
+     so no chart-specific overrides are needed here. */
+  --accent: var(--lime);
+  --accent-2: var(--lime);
+  --surface-strong: var(--card-2);
+  --border: var(--line);
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--lime);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@media (min-width: 560px) {
+  .appx-page {
+    background:
+      repeating-linear-gradient(-45deg, rgba(20, 26, 5, 0.045) 0 2px, transparent 2px 14px),
+      var(--lime);
+    padding: 28px 16px;
+  }
+}
+
+.appx {
+  position: relative;
+  width: 100%;
+  max-width: 430px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(120% 60% at 50% -10%, rgba(235, 253, 114, 0.08), transparent 60%),
+    var(--bg);
+  color: var(--text);
+}
+
+@media (min-width: 560px) {
+  .appx {
+    min-height: 0;
+    height: min(880px, calc(100vh - 56px));
+    border: 2.5px solid var(--ink);
+    border-radius: 40px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    box-shadow: 10px 12px 0 rgba(20, 26, 5, 0.9);
+    scrollbar-width: none;
+  }
+  .appx::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.appx .micro {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.appx .num {
+  font-variant-numeric: tabular-nums;
+}
+
+.appx-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.25rem 1.15rem 1.25rem;
+}
+
+.appx .appbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.appx .appbar h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+
+.appx .appbar .sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.appx .appbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.appx .device {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 0.42em 0.85em;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--lime-faint);
+  white-space: nowrap;
+}
+.appx .device .led {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lime);
+  box-shadow: 0 0 8px var(--lime);
+  animation: appx-led-blink 2.4s ease-in-out infinite;
+}
+.appx .device.offline .led {
+  background: var(--danger);
+  box-shadow: 0 0 8px var(--danger);
+  animation: none;
+}
+@keyframes appx-led-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.appx .card {
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: 20px;
+  padding: 1rem 1.05rem;
+}
+
+.appx .card .card-title {
+  margin: 0 0 0.15rem;
+  color: var(--muted);
+}
+
+.appx .bpm-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.15rem;
+  padding: 0.6rem 0 0.2rem;
+}
+
+.appx .bpm-value {
+  display: flex;
+  align-items: baseline;
+  gap: 0.18em;
+  line-height: 0.9;
+}
+.appx .bpm-value .n {
+  font-size: clamp(4.6rem, 26vw, 6.2rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  color: var(--lime);
+}
+.appx .bpm-value .unit {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.appx .bpm-hero .heart {
+  font-size: 1.3rem;
+  display: inline-block;
+  animation: appx-beat 0.97s ease-in-out infinite;
+}
+@keyframes appx-beat {
+  0%, 100% { transform: scale(1); }
+  14% { transform: scale(1.3); }
+  28% { transform: scale(1); }
+  42% { transform: scale(1.15); }
+  56% { transform: scale(1); }
+}
+
+.appx .bpm-hero .state {
+  margin-top: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.appx .bpm-hero .state b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.appx .live-chart {
+  height: 96px;
+  overflow: hidden;
+  border-radius: 12px;
+  background:
+    repeating-linear-gradient(to bottom, var(--lime-faint) 0 1px, transparent 1px 24px),
+    var(--card-2);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+          mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+.appx .live-chart svg {
+  display: block;
+  height: 100%;
+  width: 200%;
+  animation: appx-ppg-scroll 3.2s linear infinite;
+}
+.appx .live-chart path {
+  fill: none;
+  stroke: var(--lime);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+@keyframes appx-ppg-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.appx .stat-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  margin-top: 0.85rem;
+}
+.appx .stat {
+  text-align: center;
+  border-top: 1.5px solid var(--line);
+  padding-top: 0.55rem;
+}
+.appx .stat .v {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.appx .stat .k {
+  color: var(--muted);
+  margin-top: 0.1rem;
+}
+
+.appx .metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem;
+}
+.appx .metric {
+  position: relative;
+  background: var(--card);
+  border: 1.5px dashed var(--line);
+  border-radius: 18px;
+  padding: 0.85rem 0.9rem;
+  min-height: 92px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.appx .metric.is-live {
+  border-style: solid;
+}
+.appx .metric .ico {
+  font-size: 1.15rem;
+}
+.appx .metric .name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  margin-top: 0.35rem;
+}
+.appx .metric .value {
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--lime);
+}
+.appx .metric .soon {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--lime);
+  border-radius: 999px;
+  padding: 0.28em 0.7em;
+}
+
+.appx .segmented {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 3px;
+  background: var(--card);
+}
+.appx .segmented button {
+  text-align: center;
+  padding: 0.5em 0;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: inherit;
+}
+.appx .segmented button.on {
+  background: var(--lime);
+  color: var(--ink);
+}
+
+.appx .field-select {
+  width: 100%;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--card-2);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 0.6em 0.8em;
+}
+
+.appx table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.appx th,
+.appx td {
+  padding: 0.6rem 0.5rem;
+  border-top: 1.5px solid var(--line);
+  text-align: left;
+  font-size: 0.82rem;
+}
+.appx tr:first-child th {
+  border-top: none;
+}
+.appx th {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.appx .table-wrap {
+  overflow-x: auto;
+}
+
+.appx .profile {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.appx .avatar {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--lime);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  flex: none;
+}
+.appx .avatar-sm {
+  width: 34px;
+  height: 34px;
+  font-size: 0.78rem;
+  text-decoration: none;
+  border: 1.5px solid var(--ink);
+}
+.appx .profile .who p {
+  margin: 0;
+}
+.appx .profile .who .name {
+  font-weight: 800;
+  font-size: 1.05rem;
+}
+.appx .profile .who .mail {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.appx .setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.75rem 0.1rem;
+  border-top: 1.5px solid var(--line);
+}
+.appx .setting:first-child {
+  border-top: none;
+}
+.appx .setting .label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.appx .setting .hint {
+  margin: 0.15rem 0 0;
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.appx .switch {
+  position: relative;
+  display: inline-block;
+  flex: none;
+}
+.appx .switch input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+}
+.appx .switch .track {
+  display: block;
+  width: 46px;
+  height: 27px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+  background: var(--card-2);
+  transition: background 0.2s ease;
+}
+.appx .switch .track::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.appx .switch input:checked + .track {
+  background: var(--lime-soft);
+  border-color: var(--lime);
+}
+.appx .switch input:checked + .track::after {
+  transform: translateX(19px);
+  background: var(--lime);
+}
+
+.appx .btn {
+  display: block;
+  width: 100%;
+  text-align: center;
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 0.85em 1em;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  font-family: inherit;
+}
+.appx .btn-solid {
+  background: var(--lime);
+  color: var(--ink);
+}
+.appx .btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--line);
+}
+.appx .btn-danger {
+  background: transparent;
+  color: var(--danger);
+  border-color: rgba(255, 156, 138, 0.4);
+}
+.appx .btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+.appx .btn + .btn {
+  margin-top: 0.6rem;
+}
+.appx .btn-inline {
+  display: inline-flex;
+  width: auto;
+  padding: 0.5em 1em;
+  font-size: 0.78rem;
+}
+
+.appx .note {
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 0;
+}
+.appx .note b {
+  color: var(--text);
+}
+
+.appx-tabbar {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  margin: auto -1.15rem -1.25rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border-top: 1.5px solid var(--line);
+  background: rgba(14, 18, 4, 0.92);
+  backdrop-filter: blur(8px);
+  padding: 0.55rem 0.4rem calc(0.55rem + env(safe-area-inset-bottom));
+}
+.appx-tabbar a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.22rem;
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.appx-tabbar a svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.appx-tabbar a.on {
+  color: var(--lime);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appx .live-chart svg,
+  .appx .bpm-hero .heart,
+  .appx .device .led {
+    animation: none;
+  }
+}

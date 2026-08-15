@@ -1,20 +1,19 @@
 import { Outlet } from "react-router-dom";
-import { AppHeader } from "../components/AppHeader";
-import { NavBar } from "../components/NavBar";
+import { TabBar } from "../components/TabBar";
 import { MeasurementsProvider } from "../context/MeasurementsContext";
+import "../styles/app.css";
 
 export function AppLayout() {
   return (
     <MeasurementsProvider>
-      <div className="backdrop backdrop-a" />
-      <div className="backdrop backdrop-b" />
-      <AppHeader />
-      <main className="layout">
-        <section className="app-shell">
-          <NavBar />
-          <Outlet />
-        </section>
-      </main>
+      <div className="appx-page">
+        <main className="appx">
+          <div className="appx-screen">
+            <Outlet />
+            <TabBar />
+          </div>
+        </main>
+      </div>
     </MeasurementsProvider>
   );
 }

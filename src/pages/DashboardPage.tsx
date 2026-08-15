@@ -1,115 +1,120 @@
-import { DataTable } from "../components/DataTable";
-import { MetricCard } from "../components/MetricCard";
+import { Avatar } from "../components/Avatar";
+import { useAuth } from "../context/AuthContext";
 import { useMeasurements } from "../context/MeasurementsContext";
-import { formatDate, formatNumber } from "../lib/format";
-import { latestMeasurement, mostRecent } from "../lib/measurements";
+import { formatNumber, headerDate, initials, timeAgo } from "../lib/format";
+import { latestMeasurement, metricStats, mostRecent } from "../lib/measurements";
 
-function average(records: ReturnType<typeof mostRecent>, key: "heart_rate_bpm" | "spo2_percent" | "signal_quality") {
-  const values = records
-    .map((record) => Number(record[key]))
-    .filter((value) => Number.isFinite(value));
-  if (!values.length) return null;
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
+const LIVE_WAVE_PATH =
+  "M0 70 l10 0 l7 -46 l8 36 l6 -12 l8 14 l12 6 l49 2" +
+  " l10 0 l7 -46 l8 36 l6 -12 l8 14 l12 6 l49 2".repeat(7);
 
 export function DashboardPage() {
-  const { datas, statistics, isLoading } = useMeasurements();
+  const { user } = useAuth();
+  const { datas, error } = useMeasurements();
   const latest = latestMeasurement(datas);
   const recentEight = mostRecent(datas, 8);
-  const recentTen = mostRecent(datas, 10);
 
-  const summaryEntries: [string, number | null, string][] = statistics
-    ? [
-        ["Mesures reçues", statistics.measurements_count, "sur toutes les périodes"],
-        ["BPM moyen", statistics.avg_heart_rate_bpm, "Bpm sur l'historique"],
-        ["SpO2 moyen", statistics.avg_spo2_percent, "% sur l'historique"],
-        ["Pas max", statistics.max_step_count, "plus grand cumul observé"],
-      ]
-    : [];
+  const heartRate = metricStats(recentEight, "heart_rate_bpm");
+  const braceletLabel = latest?.bracelet?.display_name || latest?.bracelet?.serial_number || "Aucun bracelet";
+  const online = Boolean(latest) && !error;
+  const firstName = user?.first_name || user?.username || "";
 
   return (
-    <section className="view-stack">
-      <div className="grid cards-4">
-        <MetricCard
-          label="Fréquence cardiaque"
-          value={formatNumber(latest?.heart_rate_bpm, " bpm")}
-          trend={`Moyenne 8 points: ${formatNumber(average(recentEight, "heart_rate_bpm"), " bpm")}`}
-        />
-        <MetricCard
-          label="SpO2"
-          value={formatNumber(latest?.spo2_percent, " %")}
-          trend={`Moyenne 8 points: ${formatNumber(average(recentEight, "spo2_percent"), " %")}`}
-        />
-        <MetricCard
-          label="Pas cumulés"
-          value={formatNumber(latest?.step_count)}
-          trend={`Dernier relevé: ${formatNumber(latest?.step_count)}`}
-        />
-        <MetricCard
-          label="Qualité signal"
-          value={formatNumber(latest?.signal_quality, " %")}
-          trend={`Moyenne 8 points: ${formatNumber(average(recentEight, "signal_quality"), " %")}`}
-        />
-      </div>
+    <>
+      <header className="appbar">
+        <div>
+          <h1>Salut, {firstName || "toi"}</h1>
+          <p className="sub">{headerDate()}</p>
+        </div>
+        <div className="appbar-actions">
+          <span className={`device${online ? "" : " offline"}`}>
+            <span className="led" />
+            {braceletLabel}
+          </span>
+          <Avatar small to="/account" label={initials(user?.first_name, user?.last_name || user?.username)} />
+        </div>
+      </header>
 
-      <div className="grid split">
-        <article className="card panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Temps réel</p>
-              <h3>Dernière mesure reçue</h3>
-            </div>
-            <span className="pill">{latest ? "En ligne" : "Inactif"}</span>
-          </div>
-          <div className="live-row">
-            <div>
-              <span className="label">Timestamp</span>
-              <strong>{formatDate(latest?.captured_at)}</strong>
-            </div>
-            <div>
-              <span className="label">Bracelet</span>
-              <strong>{latest?.bracelet?.display_name || latest?.bracelet?.serial_number || "-"}</strong>
-            </div>
-          </div>
-          <div className="live-note">
-            {latest
-              ? `Dernière mesure provenant de ${latest.source_topic || "la passerelle HTTP"}.`
-              : isLoading
-                ? "Chargement des données…"
-                : "Aucune mesure reçue pour ce compte."}
-          </div>
-        </article>
+      <section className="bpm-hero">
+        <span className="micro" style={{ color: "var(--muted)" }}>
+          Fréquence cardiaque
+        </span>
+        <div className="bpm-value">
+          <span className="heart" aria-hidden="true">
+            ❤️
+          </span>
+          <span className="n num">{formatNumber(latest?.heart_rate_bpm)}</span>
+          <span className="unit">bpm</span>
+        </div>
+        <p className="state">
+          {latest ? (
+            <>
+              Dernière mesure <b>{timeAgo(latest.captured_at)}</b>
+            </>
+          ) : (
+            "En attente d'une première mesure"
+          )}
+        </p>
+      </section>
 
-        <article className="card panel">
-          <div className="panel-header">
-            <div>
-              <p className="eyebrow">Résumé</p>
-              <h3>Statistiques globales</h3>
-            </div>
+      <section className="card">
+        <p className="card-title micro">Signal en direct</p>
+        <div className="live-chart" aria-label="Courbe du pouls en temps réel">
+          <svg viewBox="0 0 800 96" preserveAspectRatio="none" aria-hidden="true">
+            <path d={LIVE_WAVE_PATH} />
+          </svg>
+        </div>
+        <div className="stat-row num">
+          <div className="stat">
+            <div className="v">{formatNumber(heartRate.min)}</div>
+            <div className="k micro">Min</div>
           </div>
-          <div className="summary-list">
-            {summaryEntries.map(([label, value, meta]) => (
-              <div className="summary-item" key={label}>
-                <div>
-                  <span>{label}</span>
-                  <strong>{formatNumber(value)}</strong>
-                </div>
-                <div className="muted">{meta}</div>
-              </div>
-            ))}
+          <div className="stat">
+            <div className="v">{formatNumber(heartRate.avg)}</div>
+            <div className="k micro">Moy</div>
           </div>
-        </article>
-      </div>
-
-      <article className="card panel">
-        <div className="panel-header">
-          <div>
-            <p className="eyebrow">Historique</p>
-            <h3>Dernières mesures</h3>
+          <div className="stat">
+            <div className="v">{formatNumber(heartRate.max)}</div>
+            <div className="k micro">Max</div>
           </div>
         </div>
-        <DataTable rows={recentTen} />
-      </article>
-    </section>
+      </section>
+
+      <section>
+        <p className="micro" style={{ color: "var(--muted)", margin: "0 0 0.6rem 0.2rem" }}>
+          Autres métriques
+        </p>
+        <div className="metrics">
+          <div className="metric is-live">
+            <span className="ico" aria-hidden="true">
+              🩸
+            </span>
+            <span className="value">{formatNumber(latest?.spo2_percent, " %")}</span>
+            <span className="name">SpO2</span>
+          </div>
+          <div className="metric is-live">
+            <span className="ico" aria-hidden="true">
+              👣
+            </span>
+            <span className="value">{formatNumber(latest?.step_count)}</span>
+            <span className="name">Pas cumulés</span>
+          </div>
+          <div className="metric is-live">
+            <span className="ico" aria-hidden="true">
+              📶
+            </span>
+            <span className="value">{formatNumber(latest?.signal_quality, " %")}</span>
+            <span className="name">Qualité signal</span>
+          </div>
+          <div className="metric">
+            <span className="ico" aria-hidden="true">
+              🧘
+            </span>
+            <span className="soon">Bientôt</span>
+            <span className="name">Variabilité (HRV)</span>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }

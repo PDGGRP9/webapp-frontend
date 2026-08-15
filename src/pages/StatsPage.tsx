@@ -2,7 +2,7 @@ import { useState } from "react";
 import { DataTable } from "../components/DataTable";
 import { LineChart, type LineChartPoint } from "../components/LineChart";
 import { useMeasurements } from "../context/MeasurementsContext";
-import { formatDate, formatNumber, metricLabel, metricSuffix } from "../lib/format";
+import { formatDate, formatNumber, headerDate, metricLabel, metricSuffix } from "../lib/format";
 import { filterByRange, sortAscendingByCapturedAt, sortDescendingByCapturedAt } from "../lib/measurements";
 import type { MetricKey, RangeKey } from "../api/types";
 
@@ -33,78 +33,84 @@ export function StatsPage() {
   const suffix = metricSuffix(metric);
 
   return (
-    <section className="view-stack">
-      <article className="card panel">
-        <div className="panel-header">
-          <div>
-            <p className="eyebrow">Statistiques</p>
-            <h3>{metricLabel(metric)}</h3>
-          </div>
-          <div className="controls">
-            <select value={metric} onChange={(event) => setMetric(event.target.value as MetricKey)}>
-              {METRIC_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {metricLabel(option)}
-                </option>
-              ))}
-            </select>
-            <div className="segmented">
-              {RANGE_OPTIONS.map((option) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  className={`segment${range === option.key ? " active" : ""}`}
-                  onClick={() => setRange(option.key)}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
+    <>
+      <header className="appbar">
+        <div>
+          <h1>Historique</h1>
+          <p className="sub">{headerDate()}</p>
         </div>
+      </header>
 
+      <select
+        className="field-select"
+        value={metric}
+        onChange={(event) => setMetric(event.target.value as MetricKey)}
+      >
+        {METRIC_OPTIONS.map((option) => (
+          <option key={option} value={option}>
+            {metricLabel(option)}
+          </option>
+        ))}
+      </select>
+
+      <nav className="segmented" style={{ gridTemplateColumns: `repeat(${RANGE_OPTIONS.length}, 1fr)` }} aria-label="Période">
+        {RANGE_OPTIONS.map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            className={range === option.key ? "on" : ""}
+            aria-current={range === option.key}
+            onClick={() => setRange(option.key)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </nav>
+
+      <section className="card">
+        <p className="card-title micro">{metricLabel(metric)}</p>
         <LineChart
           data={chartData}
           valueSuffix={suffix}
           ariaLabel={`Courbe ${metricLabel(metric)} sur ${range}`}
           emptyMessage="Aucune donnée sur cette période."
         />
-
         <div className="chart-legend">
           {chartData.length > 0
-            ? `Série affichée : ${metricLabel(metric)}. ${chartData.length} points sur ${range}.`
+            ? `${chartData.length} points sur ${range}.`
             : "Recharge la page ou élargis la fenêtre temporelle."}
           {chartData.length > 0 && (
-            <button type="button" className="ghost-btn table-toggle" onClick={() => setShowTable((v) => !v)}>
+            <button type="button" className="btn btn-ghost btn-inline" onClick={() => setShowTable((v) => !v)}>
               {showTable ? "Masquer le tableau" : "Afficher en tableau"}
             </button>
           )}
         </div>
+        {showTable && (
+          <div className="table-wrap">
+            <DataTable rows={sortDescendingByCapturedAt(filtered)} />
+          </div>
+        )}
+      </section>
 
-        {showTable && <DataTable rows={sortDescendingByCapturedAt(filtered)} />}
-      </article>
-
-      <div className="grid cards-3">
-        <article className="card metric-card">
-          <span>Moyenne</span>
-          <strong>{formatNumber(avg, suffix)}</strong>
-          <small>{chartData.length} points sur {range}</small>
-        </article>
-        <article className="card metric-card">
-          <span>Min / Max</span>
-          <strong>
-            {formatNumber(min)} / {formatNumber(max)}
-          </strong>
-          <small>Amplitude des mesures</small>
-        </article>
-        <article className="card metric-card">
-          <span>Dernière valeur</span>
-          <strong>{formatNumber(last, suffix)}</strong>
-          <small>
-            {chartData.length > 0 ? `Dernière donnée le ${formatDate(chartData.at(-1)?.x)}` : "-"}
-          </small>
-        </article>
-      </div>
-    </section>
+      <section className="card">
+        <p className="card-title micro">Résumé</p>
+        <div className="stat-row num">
+          <div className="stat">
+            <div className="v">{formatNumber(avg, suffix)}</div>
+            <div className="k micro">Moyenne</div>
+          </div>
+          <div className="stat">
+            <div className="v">
+              {formatNumber(min)} / {formatNumber(max)}
+            </div>
+            <div className="k micro">Min / Max</div>
+          </div>
+          <div className="stat">
+            <div className="v">{formatNumber(last, suffix)}</div>
+            <div className="k micro">Dernière{chartData.length > 0 ? ` · ${formatDate(chartData.at(-1)?.x)}` : ""}</div>
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
