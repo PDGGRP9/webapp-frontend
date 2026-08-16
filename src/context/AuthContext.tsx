@@ -7,7 +7,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { ApiError, login as apiLogin, logout as apiLogout, me as apiMe, register as apiRegister } from "../api/client";
+import {
+  ApiError,
+  deleteAllData as apiDeleteAllData,
+  exportMyData as apiExportMyData,
+  login as apiLogin,
+  logout as apiLogout,
+  me as apiMe,
+  register as apiRegister,
+  type ExportFormat,
+} from "../api/client";
 import type { LoginPayload, RegisterPayload, User } from "../api/types";
 
 const STORAGE_KEYS = {
@@ -34,6 +43,8 @@ interface AuthContextValue {
   login: (baseUrl: string, payload: LoginPayload) => Promise<void>;
   register: (baseUrl: string, payload: RegisterPayload) => Promise<void>;
   logout: () => Promise<void>;
+  deleteAllData: () => Promise<void>;
+  exportData: (format: ExportFormat) => Promise<Blob>;
   reportUnauthorized: () => void;
 }
 
@@ -124,6 +135,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearSession();
   }, [apiBaseUrl, token, clearSession]);
 
+  const deleteAllData = useCallback(async () => {
+    if (!token) return;
+    await apiDeleteAllData(apiBaseUrl, token);
+  }, [apiBaseUrl, token]);
+
+  const exportData = useCallback(
+    async (format: ExportFormat) => {
+      if (!token) throw new Error("Session expirée");
+      return apiExportMyData(apiBaseUrl, token, format);
+    },
+    [apiBaseUrl, token],
+  );
+
   const reportUnauthorized = useCallback(() => {
     clearSession();
   }, [clearSession]);
@@ -138,9 +162,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      deleteAllData,
+      exportData,
       reportUnauthorized,
     }),
-    [user, token, apiBaseUrl, isLoading, setApiBaseUrl, login, register, logout, reportUnauthorized],
+    [
+      user,
+      token,
+      apiBaseUrl,
+      isLoading,
+      setApiBaseUrl,
+      login,
+      register,
+      logout,
+      deleteAllData,
+      exportData,
+      reportUnauthorized,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

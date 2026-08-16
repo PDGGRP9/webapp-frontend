@@ -503,6 +503,15 @@
   font-size: 0.78rem;
 }
 
+.appx .export-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.appx .export-row .btn {
+  margin-top: 0;
+}
+
 .appx .note {
   font-size: 0.74rem;
   line-height: 1.5;
@@ -511,6 +520,76 @@
 }
 .appx .note b {
   color: var(--text);
+}
+
+.appx .dialog-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(6, 8, 2, 0.72);
+  backdrop-filter: blur(4px);
+}
+.appx .dialog-panel {
+  width: 100%;
+  max-width: 340px;
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  border-radius: 20px;
+  padding: 1.25rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+}
+.appx .dialog-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.appx .dialog-description {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.appx .dialog-field span {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.35rem;
+}
+.appx .dialog-field input {
+  width: 100%;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--card-2);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 0.65em 0.85em;
+}
+.appx .dialog-field input:focus {
+  outline: 2px solid var(--danger);
+  outline-offset: 1px;
+}
+.appx .dialog-error {
+  margin: 0.6rem 0 0;
+  font-size: 0.78rem;
+  color: var(--danger);
+}
+.appx .dialog-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 1.1rem;
+}
+.appx .dialog-actions .btn {
+  width: auto;
+  flex: 1;
 }
 
 .appx-tabbar {
