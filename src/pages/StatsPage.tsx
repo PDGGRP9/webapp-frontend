@@ -1,9 +1,15 @@
 import { useState } from "react";
+import { BarChart } from "../components/BarChart";
 import { DataTable } from "../components/DataTable";
 import { LineChart, type LineChartPoint } from "../components/LineChart";
 import { useMeasurements } from "../context/MeasurementsContext";
 import { formatDate, formatNumber, headerDate, metricLabel, metricSuffix } from "../lib/format";
-import { filterByRange, sortAscendingByCapturedAt, sortDescendingByCapturedAt } from "../lib/measurements";
+import {
+  bucketAverage,
+  filterByRange,
+  sortAscendingByCapturedAt,
+  sortDescendingByCapturedAt,
+} from "../lib/measurements";
 import type { MetricKey, RangeKey } from "../api/types";
 
 const METRIC_OPTIONS: MetricKey[] = ["heart_rate_bpm", "spo2_percent", "step_count", "signal_quality"];
@@ -12,11 +18,19 @@ const RANGE_OPTIONS: { key: RangeKey; label: string }[] = [
   { key: "7d", label: "7j" },
   { key: "30d", label: "30j" },
 ];
+const CHART_KINDS: { key: "line" | "bar"; label: string }[] = [
+  { key: "line", label: "Courbe" },
+  { key: "bar", label: "Barres" },
+];
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+const BUCKET_MS: Record<RangeKey, number> = { "24h": HOUR_MS, "7d": DAY_MS, "30d": DAY_MS };
 
 export function StatsPage() {
   const { datas } = useMeasurements();
   const [metric, setMetric] = useState<MetricKey>("heart_rate_bpm");
   const [range, setRange] = useState<RangeKey>("24h");
+  const [chartKind, setChartKind] = useState<"line" | "bar">("line");
   const [showTable, setShowTable] = useState(false);
 
   const filtered = filterByRange(datas, range);
@@ -24,6 +38,7 @@ export function StatsPage() {
   const chartData: LineChartPoint[] = ascending
     .map((record) => ({ x: record.captured_at, y: Number(record[metric]) }))
     .filter((point) => Number.isFinite(point.y));
+  const barData = bucketAverage(filtered, metric, BUCKET_MS[range]);
 
   const values = chartData.map((point) => point.y);
   const avg = values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : null;
@@ -67,17 +82,42 @@ export function StatsPage() {
         ))}
       </nav>
 
+      <nav className="segmented" style={{ gridTemplateColumns: `repeat(${CHART_KINDS.length}, 1fr)` }} aria-label="Type de graphique">
+        {CHART_KINDS.map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            className={chartKind === option.key ? "on" : ""}
+            aria-current={chartKind === option.key}
+            onClick={() => setChartKind(option.key)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </nav>
+
       <section className="card">
         <p className="card-title micro">{metricLabel(metric)}</p>
-        <LineChart
-          data={chartData}
-          valueSuffix={suffix}
-          ariaLabel={`Courbe ${metricLabel(metric)} sur ${range}`}
-          emptyMessage="Aucune donnée sur cette période."
-        />
+        {chartKind === "line" ? (
+          <LineChart
+            data={chartData}
+            valueSuffix={suffix}
+            ariaLabel={`Courbe ${metricLabel(metric)} sur ${range}`}
+            emptyMessage="Aucune donnée sur cette période."
+          />
+        ) : (
+          <BarChart
+            data={barData}
+            valueSuffix={suffix}
+            ariaLabel={`${metricLabel(metric)} moyenne par ${range === "24h" ? "heure" : "jour"} sur ${range}`}
+            emptyMessage="Aucune donnée sur cette période."
+          />
+        )}
         <div className="chart-legend">
           {chartData.length > 0
-            ? `${chartData.length} points sur ${range}.`
+            ? chartKind === "line"
+              ? `${chartData.length} points sur ${range}.`
+              : `Moyenne par ${range === "24h" ? "heure" : "jour"}.`
             : "Recharge la page ou élargis la fenêtre temporelle."}
           {chartData.length > 0 && (
             <button type="button" className="btn btn-ghost btn-inline" onClick={() => setShowTable((v) => !v)}>

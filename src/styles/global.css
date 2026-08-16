@@ -227,6 +227,8 @@ th { color: var(--muted); font-size: 0.84rem; font-weight: 600; }
 .chart-tooltip-value { fill: var(--text); font-size: 15px; font-weight: 700; }
 .chart-tooltip-date { fill: var(--muted); font-size: 11px; }
 .chart-legend { color: var(--muted); font-size: 0.95rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.chart-bar { fill: var(--accent); opacity: 0.55; transition: opacity 0.15s ease; }
+.chart-bar-max { fill: var(--accent-2); opacity: 1; }
 .table-toggle { padding: 0.5rem 0.85rem; font-size: 0.85rem; }
 
 .visually-hidden {

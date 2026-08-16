@@ -1,4 +1,4 @@
-import type { Measurement, RangeKey } from "../api/types";
+import type { Measurement, MetricKey, RangeKey } from "../api/types";
 
 /**
  * The backend returns measurements newest-first. Anything that plots or walks
@@ -47,4 +47,27 @@ export function metricStats(
     avg: values.reduce((sum, value) => sum + value, 0) / values.length,
     max: Math.max(...values),
   };
+}
+
+/** Buckets records into fixed-size time windows and averages `key` within each — oldest first. */
+export function bucketAverage(
+  records: Measurement[],
+  key: MetricKey,
+  bucketMs: number,
+): { x: string; y: number }[] {
+  const buckets = new Map<number, number[]>();
+  for (const record of records) {
+    const value = Number(record[key]);
+    if (!Number.isFinite(value)) continue;
+    const bucketStart = Math.floor(new Date(record.captured_at).getTime() / bucketMs) * bucketMs;
+    const bucket = buckets.get(bucketStart);
+    if (bucket) bucket.push(value);
+    else buckets.set(bucketStart, [value]);
+  }
+  return [...buckets.entries()]
+    .sort(([left], [right]) => left - right)
+    .map(([start, values]) => ({
+      x: new Date(start).toISOString(),
+      y: values.reduce((sum, value) => sum + value, 0) / values.length,
+    }));
 }
