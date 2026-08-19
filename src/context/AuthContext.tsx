@@ -19,10 +19,10 @@ const STORAGE_KEYS = {
 function resolveDefaultApiBaseUrl(): string {
   const saved = localStorage.getItem(STORAGE_KEYS.apiBaseUrl);
   if (saved) return saved;
-  if (window.location.port === "5173" || window.location.port === "3000") {
+  if (window.location.port === "5173") {
     return `${window.location.protocol}//${window.location.hostname}:8000`;
   }
-  return window.location.origin.replace(/:\d+$/, ":8000");
+  return window.location.origin;
 }
 
 interface AuthContextValue {
