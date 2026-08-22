@@ -78,3 +78,13 @@ export interface RegisterPayload {
   first_name?: string;
   last_name?: string;
 }
+
+export interface CheckEmailPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  password: string;
+  password_confirm: string;
+}

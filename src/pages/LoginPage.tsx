@@ -31,7 +31,9 @@ export function LoginPage() {
     <main className="login-page">
       <div className="login-card">
         <header className="login-topbar">
-          <span className="login-tag">Projet PDG </span>
+          <span className="login-tag login-tag-logo">
+            <img src="/logo-favicon-noir.svg" alt="Bracelet connecté" className="login-logo" />
+          </span>
           <span className="login-tag login-tag-outline">Open source</span>
         </header>
 
@@ -87,7 +89,7 @@ export function LoginPage() {
           </button>
           <p className="login-hint">{hint}</p>
           <div className="login-links">
-            <a href="#">Mot de passe oublié ?</a>
+            <Link to="/forgot-password">Mot de passe oublié ?</Link>
             <Link to="/register">Créer un compte</Link>
           </div>
         </form>

@@ -74,6 +74,20 @@
   background: none;
 }
 
+.login-tag-logo {
+  display: flex;
+  align-items: center;
+  border: none;
+  padding: 0;
+  background: none;
+}
+
+.login-logo {
+  display: block;
+  height: 2.2rem;
+  width: auto;
+}
+
 .login-hero {
   display: flex;
   flex-direction: column;
@@ -199,6 +213,11 @@
   margin: 0;
   font-size: 0.7rem;
   color: var(--ink-soft);
+}
+
+.login-hint-error {
+  color: #b3261e;
+  font-weight: 700;
 }
 
 .login-links {

@@ -9,15 +9,17 @@ import {
 } from "react";
 import {
   ApiError,
+  checkEmail as apiCheckEmail,
   deleteAllData as apiDeleteAllData,
   exportMyData as apiExportMyData,
   login as apiLogin,
   logout as apiLogout,
   me as apiMe,
   register as apiRegister,
+  resetPassword as apiResetPassword,
   type ExportFormat,
 } from "../api/client";
-import type { LoginPayload, RegisterPayload, User } from "../api/types";
+import type { CheckEmailPayload, LoginPayload, RegisterPayload, ResetPasswordPayload, User } from "../api/types";
 
 const STORAGE_KEYS = {
   token: "pdg.token",
@@ -42,6 +44,8 @@ interface AuthContextValue {
   setApiBaseUrl: (url: string) => void;
   login: (baseUrl: string, payload: LoginPayload) => Promise<void>;
   register: (baseUrl: string, payload: RegisterPayload) => Promise<void>;
+  checkEmail: (baseUrl: string, payload: CheckEmailPayload) => Promise<void>;
+  resetPassword: (baseUrl: string, payload: ResetPasswordPayload) => Promise<void>;
   logout: () => Promise<void>;
   deleteAllData: () => Promise<void>;
   exportData: (format: ExportFormat) => Promise<Blob>;
@@ -124,6 +128,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [persist],
   );
 
+  const checkEmail = useCallback(async (baseUrl: string, payload: CheckEmailPayload) => {
+    await apiCheckEmail(baseUrl, payload);
+  }, []);
+
+  const resetPassword = useCallback(async (baseUrl: string, payload: ResetPasswordPayload) => {
+    await apiResetPassword(baseUrl, payload);
+  }, []);
+
   const logout = useCallback(async () => {
     if (token) {
       try {
@@ -161,6 +173,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setApiBaseUrl,
       login,
       register,
+      checkEmail,
+      resetPassword,
       logout,
       deleteAllData,
       exportData,
@@ -174,6 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setApiBaseUrl,
       login,
       register,
+      checkEmail,
+      resetPassword,
       logout,
       deleteAllData,
       exportData,

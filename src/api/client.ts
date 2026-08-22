@@ -1,7 +1,9 @@
 import type {
+  CheckEmailPayload,
   LoginPayload,
   Measurement,
   RegisterPayload,
+  ResetPasswordPayload,
   Statistics,
   User,
 } from "./types";
@@ -75,6 +77,20 @@ export function login(baseUrl: string, payload: LoginPayload): Promise<AuthRespo
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+export function checkEmail(baseUrl: string, payload: CheckEmailPayload): Promise<void> {
+  return request(baseUrl, "/api/password/check-email", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).then(() => undefined);
+}
+
+export function resetPassword(baseUrl: string, payload: ResetPasswordPayload): Promise<void> {
+  return request(baseUrl, "/api/password/reset", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }).then(() => undefined);
 }
 
 export function logout(baseUrl: string, token: string): Promise<void> {

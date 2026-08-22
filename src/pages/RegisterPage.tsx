@@ -40,7 +40,9 @@ export function RegisterPage() {
     <main className="login-page">
       <div className="login-card">
         <header className="login-topbar">
-          <span className="login-tag">Projet PDG</span>
+          <span className="login-tag login-tag-logo">
+            <img src="/logo-favicon-noir.svg" alt="Bracelet connecté" className="login-logo" />
+          </span>
           <span className="login-tag login-tag-outline">Open source</span>
         </header>
 
