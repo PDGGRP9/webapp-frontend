@@ -56,45 +56,47 @@ export function StatsPage() {
         </div>
       </header>
 
-      <select
-        className="field-select"
-        value={metric}
-        onChange={(event) => setMetric(event.target.value as MetricKey)}
-      >
-        {METRIC_OPTIONS.map((option) => (
-          <option key={option} value={option}>
-            {metricLabel(option)}
-          </option>
-        ))}
-      </select>
+      <div className="stats-controls">
+        <select
+          className="field-select"
+          value={metric}
+          onChange={(event) => setMetric(event.target.value as MetricKey)}
+        >
+          {METRIC_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {metricLabel(option)}
+            </option>
+          ))}
+        </select>
 
-      <nav className="segmented" style={{ gridTemplateColumns: `repeat(${RANGE_OPTIONS.length}, 1fr)` }} aria-label="Période">
-        {RANGE_OPTIONS.map((option) => (
-          <button
-            key={option.key}
-            type="button"
-            className={range === option.key ? "on" : ""}
-            aria-current={range === option.key}
-            onClick={() => setRange(option.key)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </nav>
+        <nav className="segmented" style={{ gridTemplateColumns: `repeat(${RANGE_OPTIONS.length}, 1fr)` }} aria-label="Période">
+          {RANGE_OPTIONS.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              className={range === option.key ? "on" : ""}
+              aria-current={range === option.key}
+              onClick={() => setRange(option.key)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </nav>
 
-      <nav className="segmented" style={{ gridTemplateColumns: `repeat(${CHART_KINDS.length}, 1fr)` }} aria-label="Type de graphique">
-        {CHART_KINDS.map((option) => (
-          <button
-            key={option.key}
-            type="button"
-            className={chartKind === option.key ? "on" : ""}
-            aria-current={chartKind === option.key}
-            onClick={() => setChartKind(option.key)}
-          >
-            {option.label}
-          </button>
-        ))}
-      </nav>
+        <nav className="segmented" style={{ gridTemplateColumns: `repeat(${CHART_KINDS.length}, 1fr)` }} aria-label="Type de graphique">
+          {CHART_KINDS.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              className={chartKind === option.key ? "on" : ""}
+              aria-current={chartKind === option.key}
+              onClick={() => setChartKind(option.key)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </nav>
+      </div>
 
       <section className="card">
         <p className="card-title micro">{metricLabel(metric)}</p>
@@ -104,6 +106,7 @@ export function StatsPage() {
             valueSuffix={suffix}
             ariaLabel={`Courbe ${metricLabel(metric)} sur ${range}`}
             emptyMessage="Aucune donnée sur cette période."
+            minDomain={metric === "step_count" ? 0 : undefined}
           />
         ) : (
           <BarChart

@@ -12,6 +12,8 @@ interface LineChartProps {
   valueSuffix?: string;
   ariaLabel: string;
   emptyMessage: string;
+  /** Pin the y-axis floor instead of auto-padding below the lowest value (e.g. 0 for a step count). */
+  minDomain?: number;
 }
 
 const WIDTH = 900;
@@ -34,7 +36,7 @@ function niceTicks(min: number, max: number, count: number): number[] {
   return ticks;
 }
 
-export function LineChart({ data, valueSuffix = "", ariaLabel, emptyMessage }: LineChartProps) {
+export function LineChart({ data, valueSuffix = "", ariaLabel, emptyMessage, minDomain }: LineChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   const scales = useMemo(() => {
@@ -45,8 +47,9 @@ export function LineChart({ data, valueSuffix = "", ariaLabel, emptyMessage }: L
     const xMax = Math.max(...timestamps);
     const valueMin = Math.min(...values);
     const valueMax = Math.max(...values);
-    const pad = Math.max((valueMax - valueMin) * 0.12, 1);
-    const yMin = valueMin - pad;
+    const floor = minDomain ?? valueMin;
+    const pad = Math.max((valueMax - floor) * 0.12, 1);
+    const yMin = minDomain ?? floor - pad;
     const yMax = valueMax + pad;
 
     const xScale = (t: number) =>
@@ -54,7 +57,7 @@ export function LineChart({ data, valueSuffix = "", ariaLabel, emptyMessage }: L
     const yScale = (value: number) => MARGIN.top + PLOT_HEIGHT - ((value - yMin) / (yMax - yMin)) * PLOT_HEIGHT;
 
     return { timestamps, xMin, xMax, yMin, yMax, xScale, yScale };
-  }, [data]);
+  }, [data, minDomain]);
 
   if (!scales || data.length === 0) {
     return (

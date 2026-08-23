@@ -32,13 +32,13 @@ export function LoginPage() {
       <div className="login-card">
         <header className="login-topbar">
           <span className="login-tag login-tag-logo">
-            <img src="/logo-favicon-noir.svg" alt="Bracelet connecté" className="login-logo" />
+            <img src="/logo-favicon-noir.svg" alt="BraceCo" className="login-logo" />
           </span>
           <span className="login-tag login-tag-outline">Open source</span>
         </header>
 
         <section className="login-hero">
-          <h1>Bracelet connecté</h1>
+          <h1>BraceCo</h1>
           <p className="login-tagline">Open source. Sans abonnement. Sans espion.</p>
           <p className="login-note">
             Le front garde un token signé en local et interroge le back-end pour afficher les dernières mesures.

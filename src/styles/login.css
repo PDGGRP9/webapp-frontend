@@ -14,6 +14,12 @@
 }
 
 @media (min-width: 560px) {
+  /* Match the density of the authenticated app shell on browser widths.
+     Scaling the root font-size (rather than `zoom`) shrinks every rem/em
+     size uniformly without disturbing vh/dvh height calculations below. */
+  html {
+    font-size: 80%;
+  }
   .login-page {
     background:
       repeating-linear-gradient(-45deg, rgba(20, 26, 5, 0.045) 0 2px, transparent 2px 14px),
@@ -36,14 +42,16 @@
 
 @media (min-width: 560px) {
   .login-card {
+    max-width: 560px;
     min-height: 0;
-    height: min(880px, calc(100vh - 56px));
-    border: 2.5px solid var(--ink);
-    border-radius: 40px;
-    box-shadow: 10px 12px 0 rgba(20, 26, 5, 0.9);
+    height: auto;
+    max-height: calc(100vh - 56px);
+    border: 1.5px solid var(--ink);
+    border-radius: 28px;
+    box-shadow: 0 24px 60px rgba(20, 26, 5, 0.35);
     overflow-y: auto;
     scrollbar-width: none;
-    padding: 2rem 2.2rem 1.6rem;
+    padding: 2.2rem 2.4rem 1.8rem;
   }
   .login-card::-webkit-scrollbar {
     display: none;

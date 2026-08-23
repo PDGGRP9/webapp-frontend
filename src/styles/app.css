@@ -28,13 +28,15 @@
   -webkit-font-smoothing: antialiased;
 }
 
-@media (min-width: 560px) {
-  .appx-page {
-    background:
-      repeating-linear-gradient(-45deg, rgba(20, 26, 5, 0.045) 0 2px, transparent 2px 14px),
-      var(--lime);
-    padding: 28px 16px;
-  }
+.web-shell {
+  display: flex;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.web-sidebar {
+  display: none;
 }
 
 .appx {
@@ -45,25 +47,234 @@
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+  flex: 1;
   background:
     radial-gradient(120% 60% at 50% -10%, rgba(235, 253, 114, 0.08), transparent 60%),
     var(--bg);
   color: var(--text);
 }
 
-@media (min-width: 560px) {
-  .appx {
-    min-height: 0;
-    height: min(880px, calc(100vh - 56px));
-    border: 2.5px solid var(--ink);
-    border-radius: 40px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    box-shadow: 10px 12px 0 rgba(20, 26, 5, 0.9);
-    scrollbar-width: none;
+/* Any viewport wider than a phone: stop letterboxing the app as a floating
+   card and let it use the full browser width. The bottom tab bar still
+   drives navigation here; the sidebar only replaces it at the desktop
+   breakpoint below. Narrower widths (real phones / an eventual Android
+   wrap) keep the untouched phone layout above. */
+@media (min-width: 640px) {
+  /* Browser widths read as "zoomed in" next to the phone layout above — this
+     brings the whole shell down to a denser, ~80%-zoom density so a full
+     page fits without scrolling. Scaling the root font-size (rather than
+     using `zoom`) shrinks every rem/em-based size uniformly without
+     disturbing vh/dvh height calculations below. */
+  html {
+    font-size: 80%;
   }
-  .appx::-webkit-scrollbar {
+  .appx-page {
+    display: block;
+    background: var(--bg);
+  }
+  .appx {
+    max-width: none;
+  }
+  .appx-screen {
+    max-width: 640px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 1.5rem;
+  }
+}
+
+/* Desktop/browser layout: swap the bottom tab bar for a real sidebar app
+   shell. The narrow (mobile / eventual Android-wrap) styles above stay
+   untouched so this file still works as a phone screen at small widths. */
+@media (min-width: 880px) {
+  .appx-page {
+    display: block;
+    background: var(--bg);
+  }
+
+  .web-sidebar {
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    width: 248px;
+    height: 100vh;
+    height: 100dvh;
+    position: sticky;
+    top: 0;
+    padding: 1.3rem 1rem 1.15rem;
+    gap: 1.75rem;
+    background: var(--card);
+    border-right: 1.5px solid var(--line);
+    transition: width 0.16s ease;
+  }
+  .web-sidebar.collapsed {
+    width: 88px;
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
+  }
+
+  /* Keep the collapse button in the same spot (right of the logo) in both
+     states — it used to drop underneath the logo when collapsed, which
+     read as the button jumping around. */
+  .web-sidebar-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.4rem;
+  }
+
+  .web-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    text-decoration: none;
+    color: var(--text);
+    font-weight: 800;
+    font-size: 0.9rem;
+    letter-spacing: -0.01em;
+    min-width: 0;
+    overflow: hidden;
+  }
+  .web-brand-logo {
+    width: 26px;
+    height: 26px;
+    flex: none;
+  }
+  .web-brand-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .web-sidebar.collapsed .web-brand-text {
     display: none;
+  }
+
+  .web-collapse-btn {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+  }
+  .web-collapse-btn:hover {
+    background: var(--lime-faint);
+    color: var(--text);
+  }
+  .web-collapse-btn svg {
+    width: 17px;
+    height: 17px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .web-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .web-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0.6em 0.7em;
+    border-radius: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .web-sidebar.collapsed .web-nav-link {
+    justify-content: center;
+    padding: 0.6em;
+  }
+  .web-nav-link svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .web-nav-link:hover {
+    background: var(--lime-faint);
+    color: var(--text);
+  }
+  .web-nav-link.on {
+    background: var(--lime-soft);
+    color: var(--lime);
+  }
+  .web-nav-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .web-sidebar.collapsed .web-nav-label {
+    display: none;
+  }
+
+  .web-account {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5em 0.55em;
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--text);
+    border: 1.5px solid transparent;
+  }
+  .web-sidebar.collapsed .web-account {
+    justify-content: center;
+    padding: 0.5em;
+  }
+  .web-account:hover {
+    background: var(--lime-faint);
+  }
+  .web-account.on {
+    border-color: var(--line);
+    background: var(--card-2);
+  }
+  .web-account-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .web-sidebar.collapsed .web-account-name {
+    display: none;
+  }
+
+  .appx {
+    max-width: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
+  .appx-screen {
+    max-width: 860px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 2.2rem 2.2rem 2.6rem;
+    gap: 1.4rem;
+  }
+
+  .appx .live-chart {
+    height: 120px;
+  }
+
+  .appx .metrics {
+    grid-template-columns: repeat(4, 1fr);
   }
 }
 
@@ -336,6 +547,42 @@
   border: 1.5px solid var(--line);
   border-radius: 12px;
   padding: 0.6em 0.8em;
+}
+
+.appx .stats-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+@media (min-width: 640px) {
+  .appx .stats-controls .segmented {
+    padding: 5px;
+  }
+  .appx .stats-controls .segmented button {
+    padding: 0.85em 0.6em;
+    font-size: 1rem;
+  }
+  .appx .stats-controls .field-select {
+    padding: 0.75em 0.9em;
+    font-size: 1rem;
+  }
+}
+
+@media (min-width: 880px) {
+  .appx .stats-controls {
+    flex-direction: row;
+    align-items: center;
+  }
+  .appx .stats-controls .field-select {
+    width: auto;
+    min-width: 220px;
+  }
+  .appx .stats-controls .segmented {
+    width: auto;
+    flex: none;
+    min-width: 220px;
+  }
 }
 
 .appx table {
@@ -627,6 +874,12 @@
 }
 .appx-tabbar a.on {
   color: var(--lime);
+}
+
+@media (min-width: 880px) {
+  .appx-tabbar {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
