@@ -7,13 +7,35 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { StatsPage } from "./pages/StatsPage";
 import { AccountPage } from "./pages/AccountPage";
 import { ProtectedRoute } from "./routes/ProtectedRoute";
+import { PublicRoute } from "./routes/PublicRoute";
 
 export function App() {
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route
+        path="/login"
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/register"
+        element={
+          <PublicRoute>
+            <RegisterPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPasswordPage />
+          </PublicRoute>
+        }
+      />
       <Route
         element={
           <ProtectedRoute>
