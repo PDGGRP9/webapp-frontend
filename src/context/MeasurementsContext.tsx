@@ -36,7 +36,7 @@ export function MeasurementsProvider({ children }: { children: ReactNode }) {
     if (!user || !token) return;
     try {
       const [datasResponse, statisticsResponse] = await Promise.all([
-        fetchDatas(apiBaseUrl, token, user.id, 500),
+        fetchDatas(apiBaseUrl, token, user.id, 5000),
         fetchStatistics(apiBaseUrl, token, user.id),
       ]);
       setDatas(datasResponse.datas);

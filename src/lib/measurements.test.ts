@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { Measurement } from "../api/types";
 import {
+  dailyTotals,
   filterByRange,
   latestMeasurement,
   mostRecent,
   sortAscendingByCapturedAt,
   sortDescendingByCapturedAt,
+  splitByGap,
 } from "./measurements";
 
 function makeMeasurement(id: number, capturedAt: string): Measurement {
@@ -88,6 +90,55 @@ describe("mostRecent", () => {
     ];
 
     expect(mostRecent(unordered, 2).map((m) => m.id)).toEqual([4, 3]);
+  });
+});
+
+describe("splitByGap", () => {
+  it("keeps a single run when points are within the gap threshold", () => {
+    const points = [
+      { x: "2026-01-01T00:00:00Z", y: 1 },
+      { x: "2026-01-01T00:10:00Z", y: 2 },
+      { x: "2026-01-01T00:20:00Z", y: 3 },
+    ];
+
+    expect(splitByGap(points, 15 * 60 * 1000)).toEqual([points]);
+  });
+
+  it("starts a new segment once a gap exceeds the threshold", () => {
+    const points = [
+      { x: "2026-01-01T00:00:00Z", y: 1 },
+      { x: "2026-01-01T00:10:00Z", y: 2 },
+      { x: "2026-01-01T04:00:00Z", y: 3 }, // ~3h50 gap
+      { x: "2026-01-01T04:10:00Z", y: 4 },
+    ];
+
+    const segments = splitByGap(points, 60 * 60 * 1000);
+
+    expect(segments.map((segment) => segment.map((p) => p.y))).toEqual([
+      [1, 2],
+      [3, 4],
+    ]);
+  });
+
+  it("returns an empty array for no points", () => {
+    expect(splitByGap([], 1000)).toEqual([]);
+  });
+});
+
+describe("dailyTotals", () => {
+  it("takes the highest value seen on each day, one entry per day", () => {
+    const records = [
+      { ...makeMeasurement(1, "2026-01-01T08:00:00Z"), step_count: 500 },
+      { ...makeMeasurement(2, "2026-01-01T20:00:00Z"), step_count: 4000 },
+      { ...makeMeasurement(3, "2026-01-02T06:00:00Z"), step_count: 200 }, // resets on the new day
+      { ...makeMeasurement(4, "2026-01-02T22:00:00Z"), step_count: 6000 },
+    ];
+
+    expect(dailyTotals(records, "step_count").sort((a, b) => a - b)).toEqual([4000, 6000]);
+  });
+
+  it("returns an empty array for no records", () => {
+    expect(dailyTotals([], "step_count")).toEqual([]);
   });
 });
 

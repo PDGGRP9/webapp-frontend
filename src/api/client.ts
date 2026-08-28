@@ -141,7 +141,7 @@ export function fetchDatas(
   baseUrl: string,
   token: string,
   userId: number,
-  limit = 500,
+  limit = 5000,
 ): Promise<DatasResponse> {
   return request<DatasResponse>(baseUrl, `/api/datas/${userId}?limit=${limit}`, {
     method: "GET",

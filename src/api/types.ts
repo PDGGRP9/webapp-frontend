@@ -64,7 +64,7 @@ export type MetricKey =
   | "step_count"
   | "signal_quality";
 
-export type RangeKey = "24h" | "7d" | "30d";
+export type RangeKey = "24h" | "7d";
 
 export interface LoginPayload {
   email: string;

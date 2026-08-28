@@ -28,7 +28,6 @@ export function mostRecent(records: Measurement[], count: number): Measurement[]
 const RANGE_HOURS: Record<RangeKey, number> = {
   "24h": 24,
   "7d": 24 * 7,
-  "30d": 24 * 30,
 };
 
 export function filterByRange(records: Measurement[], range: RangeKey): Measurement[] {
@@ -47,6 +46,40 @@ export function metricStats(
     avg: values.reduce((sum, value) => sum + value, 0) / values.length,
     max: Math.max(...values),
   };
+}
+
+/**
+ * Splits an ascending series into contiguous runs, starting a new run whenever the
+ * gap to the previous point exceeds `gapMs`. Used to draw chart lines with real
+ * holes instead of bridging silently across periods with no measurements.
+ */
+export function splitByGap<T extends { x: string }>(points: T[], gapMs: number): T[][] {
+  if (points.length === 0) return [];
+  const segments: T[][] = [[points[0]]];
+  for (let index = 1; index < points.length; index += 1) {
+    const previous = points[index - 1];
+    const current = points[index];
+    const delta = new Date(current.x).getTime() - new Date(previous.x).getTime();
+    if (delta > gapMs) segments.push([current]);
+    else segments[segments.length - 1].push(current);
+  }
+  return segments;
+}
+
+/**
+ * For a counter that resets every calendar day (e.g. step_count), returns the highest
+ * value seen on each UTC day — i.e. that day's running total — one entry per day present.
+ */
+export function dailyTotals(records: Measurement[], key: MetricKey): number[] {
+  const byDay = new Map<string, number>();
+  for (const record of records) {
+    const value = Number(record[key]);
+    if (!Number.isFinite(value)) continue;
+    const day = record.captured_at.slice(0, 10);
+    const current = byDay.get(day);
+    if (current === undefined || value > current) byDay.set(day, value);
+  }
+  return [...byDay.values()];
 }
 
 /** Buckets records into fixed-size time windows and averages `key` within each — oldest first. */

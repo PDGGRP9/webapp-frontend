@@ -1,26 +1,47 @@
-import { useMemo, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { formatDate } from "../lib/format";
+import { splitByGap } from "../lib/measurements";
 
 export interface LineChartPoint {
   x: string;
   y: number;
 }
 
+interface ProjectedPoint extends LineChartPoint {
+  px: number;
+  py: number;
+}
+
 interface LineChartProps {
-  /** Must already be sorted ascending by `x` (ISO timestamp) — oldest first. */
+  /** Dense raw series, sorted ascending by `x` (ISO timestamp). May contain time gaps. */
   data: LineChartPoint[];
+  /** Smoothed average overlay (blue curve), sorted ascending. Optional. */
+  averageData?: LineChartPoint[];
+  /** Fixed chronological left/right edges of the axis (ISO). Data is placed on this timeline
+   *  rather than on its own min/max, so silent periods render as real empty space. */
+  domainStart: string;
+  domainEnd: string;
+  /** Break the raw line/area whenever two consecutive raw points are farther apart than this. */
+  gapThresholdMs: number;
+  /** Break the average line whenever two consecutive average points are farther apart than this.
+   *  Defaults to `gapThresholdMs`. */
+  averageGapThresholdMs?: number;
   valueSuffix?: string;
   ariaLabel: string;
   emptyMessage: string;
   /** Pin the y-axis floor instead of auto-padding below the lowest value (e.g. 0 for a step count). */
   minDomain?: number;
+  /** Horizontal pixels per minute of the domain. Higher = more room per minute-level
+   *  bucket, at the cost of a longer horizontally-scrollable canvas. */
+  pxPerMinute?: number;
 }
 
-const WIDTH = 900;
+const EMPTY_WIDTH = 900;
 const HEIGHT = 420;
 const MARGIN = { top: 28, right: 28, bottom: 56, left: 64 };
-const PLOT_WIDTH = WIDTH - MARGIN.left - MARGIN.right;
 const PLOT_HEIGHT = HEIGHT - MARGIN.top - MARGIN.bottom;
+const MINUTE_MS = 60 * 1000;
+const DEFAULT_PX_PER_MINUTE = 6;
 
 function niceTicks(min: number, max: number, count: number): number[] {
   if (min === max) return [min];
@@ -36,15 +57,54 @@ function niceTicks(min: number, max: number, count: number): number[] {
   return ticks;
 }
 
-export function LineChart({ data, valueSuffix = "", ariaLabel, emptyMessage, minDomain }: LineChartProps) {
+/** Smooths a polyline into a continuous curve by quadratic-curving through each segment's midpoint. */
+function smoothLinePath(points: ProjectedPoint[]): string {
+  if (points.length < 3) {
+    return points.map((p, i) => `${i === 0 ? "M" : "L"}${p.px},${p.py}`).join(" ");
+  }
+  let d = `M${points[0].px},${points[0].py}`;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const current = points[i];
+    const next = points[i + 1];
+    const midX = (current.px + next.px) / 2;
+    const midY = (current.py + next.py) / 2;
+    d += ` Q${current.px},${current.py} ${midX},${midY}`;
+  }
+  const lastPoint = points[points.length - 1];
+  d += ` L${lastPoint.px},${lastPoint.py}`;
+  return d;
+}
+
+export function LineChart({
+  data,
+  averageData = [],
+  domainStart,
+  domainEnd,
+  gapThresholdMs,
+  averageGapThresholdMs,
+  valueSuffix = "",
+  ariaLabel,
+  emptyMessage,
+  minDomain,
+  pxPerMinute = DEFAULT_PX_PER_MINUTE,
+}: LineChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const gradientId = useId();
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const domainStartMs = new Date(domainStart).getTime();
+  const domainEndMs = new Date(domainEnd).getTime();
+  // The rendered pixel width is computed directly from the time span — never measured
+  // from the DOM (no ResizeObserver race) and never a CSS percentage (those don't
+  // reliably resolve inside an `overflow-x: auto` ancestor). viewBox and on-screen
+  // width use the same number, so there's no aspect-ratio mismatch either.
+  const totalMinutes = Math.max((domainEndMs - domainStartMs) / MINUTE_MS, 1);
+  const plotWidth = totalMinutes * pxPerMinute;
+  const width = MARGIN.left + plotWidth + MARGIN.right;
 
   const scales = useMemo(() => {
-    if (data.length === 0) return null;
-    const timestamps = data.map((point) => new Date(point.x).getTime());
-    const values = data.map((point) => point.y);
-    const xMin = Math.min(...timestamps);
-    const xMax = Math.max(...timestamps);
+    if (data.length === 0 && averageData.length === 0) return null;
+    const values = [...data, ...averageData].map((point) => point.y);
     const valueMin = Math.min(...values);
     const valueMax = Math.max(...values);
     const floor = minDomain ?? valueMin;
@@ -52,18 +112,23 @@ export function LineChart({ data, valueSuffix = "", ariaLabel, emptyMessage, min
     const yMin = minDomain ?? floor - pad;
     const yMax = valueMax + pad;
 
-    const xScale = (t: number) =>
-      MARGIN.left + (xMax === xMin ? PLOT_WIDTH / 2 : ((t - xMin) / (xMax - xMin)) * PLOT_WIDTH);
+    const xScale = (t: number) => MARGIN.left + ((t - domainStartMs) / (domainEndMs - domainStartMs)) * plotWidth;
     const yScale = (value: number) => MARGIN.top + PLOT_HEIGHT - ((value - yMin) / (yMax - yMin)) * PLOT_HEIGHT;
 
-    return { timestamps, xMin, xMax, yMin, yMax, xScale, yScale };
-  }, [data, minDomain]);
+    return { yMin, yMax, xScale, yScale };
+  }, [data, averageData, minDomain, domainStartMs, domainEndMs, plotWidth]);
 
-  if (!scales || data.length === 0) {
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollLeft = el.scrollWidth;
+  }, [width, data.length]);
+
+  if (!scales || (data.length === 0 && averageData.length === 0)) {
     return (
       <div className="chart-empty">
-        <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-label={ariaLabel}>
-          <text x={WIDTH / 2} y={HEIGHT / 2} textAnchor="middle" className="chart-label">
+        <svg viewBox={`0 0 ${EMPTY_WIDTH} ${HEIGHT}`} role="img" aria-label={ariaLabel}>
+          <text x={EMPTY_WIDTH / 2} y={HEIGHT / 2} textAnchor="middle" className="chart-label">
             {emptyMessage}
           </text>
         </svg>
@@ -71,25 +136,33 @@ export function LineChart({ data, valueSuffix = "", ariaLabel, emptyMessage, min
     );
   }
 
-  const { timestamps, xMin, xMax, xScale, yScale, yMin, yMax } = scales;
-  const spanMs = xMax - xMin;
+  const { xScale, yScale, yMin, yMax } = scales;
+  const baseline = yScale(yMin);
+  const spanMs = domainEndMs - domainStartMs;
   const formatXLabel = (iso: string) =>
     spanMs <= 2 * 24 * 60 * 60 * 1000
       ? new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-      : new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" });
-  const points = data.map((point, index) => ({
+      : new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  const project = (point: LineChartPoint): ProjectedPoint => ({
     ...point,
-    px: xScale(timestamps[index]),
+    px: xScale(new Date(point.x).getTime()),
     py: yScale(point.y),
-  }));
-  const path = points.map((point, index) => `${index === 0 ? "M" : "L"}${point.px},${point.py}`).join(" ");
-  const dotRadius = points.length > 40 ? 2.5 : 4.5;
-  const active = activeIndex !== null ? points[activeIndex] : null;
+  });
+  const rawSegments = splitByGap(data, gapThresholdMs).map((segment) => segment.map(project));
+  const avgSegments = splitByGap(averageData, averageGapThresholdMs ?? gapThresholdMs).map((segment) =>
+    segment.map(project),
+  );
+
+  // Hovering/scrubbing reads off the raw per-minute series (not the smoothed average) so
+  // the tooltip shows the actual bpm at that minute, not a coarser trend value.
+  const hoverPoints = data.length > 0 ? data.map(project) : averageData.map(project);
+  const active = activeIndex !== null ? hoverPoints[activeIndex] : null;
 
   function nearestIndexForX(px: number): number {
     let closest = 0;
     let closestDistance = Infinity;
-    points.forEach((point, index) => {
+    hoverPoints.forEach((point, index) => {
       const distance = Math.abs(point.px - px);
       if (distance < closestDistance) {
         closestDistance = distance;
@@ -102,134 +175,136 @@ export function LineChart({ data, valueSuffix = "", ariaLabel, emptyMessage, min
   function handlePointerMove(event: PointerEvent<SVGRectElement>) {
     const bounds = event.currentTarget.getBoundingClientRect();
     const ratio = (event.clientX - bounds.left) / bounds.width;
-    const px = MARGIN.left + ratio * PLOT_WIDTH;
+    const px = MARGIN.left + ratio * plotWidth;
     setActiveIndex(nearestIndexForX(px));
   }
 
   function handleKeyDown(event: KeyboardEvent<SVGSVGElement>) {
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      setActiveIndex((current) => Math.min(points.length - 1, (current ?? -1) + 1));
+      setActiveIndex((current) => Math.min(hoverPoints.length - 1, (current ?? -1) + 1));
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
-      setActiveIndex((current) => Math.max(0, (current ?? points.length) - 1));
+      setActiveIndex((current) => Math.max(0, (current ?? hoverPoints.length) - 1));
     } else if (event.key === "Home") {
       event.preventDefault();
       setActiveIndex(0);
     } else if (event.key === "End") {
       event.preventDefault();
-      setActiveIndex(points.length - 1);
+      setActiveIndex(hoverPoints.length - 1);
     } else if (event.key === "Escape") {
       setActiveIndex(null);
     }
   }
 
-  const last = points[points.length - 1];
+  const last = hoverPoints[hoverPoints.length - 1];
   const tickValues = niceTicks(yMin, yMax, 5);
-  const xLabelCount = Math.min(points.length, 6);
+  // One label roughly every 160px so they never crowd, regardless of how wide the canvas is.
+  const xLabelCount = Math.max(2, Math.floor(plotWidth / 160));
 
-  // Flip the tooltip to the left of the crosshair once it would overflow the right edge.
   const tooltipWidth = 150;
-  const tooltipX = active
-    ? Math.min(Math.max(active.px + 12, MARGIN.left), WIDTH - MARGIN.right - tooltipWidth)
-    : 0;
+  const tooltipX = active ? Math.min(active.px + 12, width - MARGIN.right - tooltipWidth) : 0;
 
   return (
     <div className="chart-wrap">
-      <svg
-        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        role="img"
-        aria-label={ariaLabel}
-        className="chart-svg"
-        tabIndex={0}
-        onKeyDown={handleKeyDown}
-        onPointerLeave={() => setActiveIndex(null)}
-      >
-        {tickValues.map((tick) => {
-          const y = yScale(tick);
-          return (
-            <g key={tick}>
-              <line x1={MARGIN.left} x2={WIDTH - MARGIN.right} y1={y} y2={y} className="chart-grid" />
-              <text x={MARGIN.left - 10} y={y + 4} textAnchor="end" className="chart-label">
-                {Math.round(tick)}
+      <div className="chart-scroll" ref={scrollRef}>
+        <svg
+          viewBox={`0 0 ${width} ${HEIGHT}`}
+          role="img"
+          aria-label={ariaLabel}
+          className="chart-svg"
+          style={{ width: `${width}px`, height: `${HEIGHT}px` }}
+          tabIndex={0}
+          onKeyDown={handleKeyDown}
+          onPointerLeave={() => setActiveIndex(null)}
+        >
+          <defs>
+            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" className="chart-area-stop-top" />
+              <stop offset="100%" className="chart-area-stop-bottom" />
+            </linearGradient>
+          </defs>
+
+          {tickValues.map((tick) => {
+            const y = yScale(tick);
+            return (
+              <g key={tick}>
+                <line x1={MARGIN.left} x2={width - MARGIN.right} y1={y} y2={y} className="chart-grid" />
+                <text x={MARGIN.left - 10} y={y + 4} textAnchor="end" className="chart-label">
+                  {Math.round(tick)}
+                </text>
+              </g>
+            );
+          })}
+
+          <line x1={MARGIN.left} x2={width - MARGIN.right} y1={baseline} y2={baseline} className="chart-axis" />
+
+          {Array.from({ length: xLabelCount + 1 }, (_, i) => {
+            const t = domainStartMs + (i / xLabelCount) * spanMs;
+            return (
+              <text key={i} x={xScale(t)} y={HEIGHT - 22} textAnchor="middle" className="chart-label">
+                {formatXLabel(new Date(t).toISOString())}
               </text>
-            </g>
-          );
-        })}
+            );
+          })}
 
-        <line
-          x1={MARGIN.left}
-          x2={WIDTH - MARGIN.right}
-          y1={HEIGHT - MARGIN.bottom}
-          y2={HEIGHT - MARGIN.bottom}
-          className="chart-axis"
-        />
+          {rawSegments.map((segment, segIndex) =>
+            segment.length > 1 ? (
+              <g key={segIndex}>
+                <path
+                  d={`${smoothLinePath(segment)} L${segment[segment.length - 1].px},${baseline} L${segment[0].px},${baseline} Z`}
+                  fill={`url(#${gradientId})`}
+                  className="chart-area"
+                />
+                <path d={smoothLinePath(segment)} className="chart-path-raw" />
+              </g>
+            ) : (
+              <circle key={segIndex} cx={segment[0].px} cy={segment[0].py} r={3} className="chart-point-raw" />
+            ),
+          )}
 
-        {Array.from({ length: xLabelCount }, (_, i) => {
-          const index = Math.round((points.length - 1) * (xLabelCount === 1 ? 0 : i / (xLabelCount - 1)));
-          const point = points[index];
-          return (
-            <text
-              key={index}
-              x={point.px}
-              y={HEIGHT - 22}
-              textAnchor="middle"
-              className="chart-label"
-            >
-              {formatXLabel(point.x)}
+          {avgSegments.map((segment, segIndex) =>
+            segment.length > 1 ? (
+              <path key={segIndex} d={smoothLinePath(segment)} className="chart-path-avg" />
+            ) : (
+              <circle key={segIndex} cx={segment[0].px} cy={segment[0].py} r={4} className="chart-point-avg" />
+            ),
+          )}
+
+          {last && (
+            <text x={last.px} y={last.py - 14} textAnchor="end" className="chart-end-label">
+              {Math.round(last.y)}
+              {valueSuffix}
             </text>
-          );
-        })}
+          )}
 
-        <path d={path} className="chart-path" />
-
-        {points.map((point, index) => (
-          <circle
-            key={point.x}
-            cx={point.px}
-            cy={point.py}
-            r={index === points.length - 1 ? 5.5 : dotRadius}
-            className="chart-point"
-          />
-        ))}
-
-        <text x={last.px} y={last.py - 14} textAnchor="end" className="chart-end-label">
-          {Math.round(last.y)}
-          {valueSuffix}
-        </text>
-
-        {active && (
-          <g>
-            <line
-              x1={active.px}
-              x2={active.px}
-              y1={MARGIN.top}
-              y2={HEIGHT - MARGIN.bottom}
-              className="chart-crosshair"
-            />
-            <circle cx={active.px} cy={active.py} r={6} className="chart-point chart-point-active" />
-            <g transform={`translate(${tooltipX}, ${MARGIN.top})`}>
-              <rect width={tooltipWidth} height={44} rx={10} className="chart-tooltip-bg" />
-              <text x={12} y={18} className="chart-tooltip-value">
-                {Math.round(active.y)}
-                {valueSuffix}
-              </text>
-              <text x={12} y={34} className="chart-tooltip-date">
-                {formatDate(active.x)}
-              </text>
+          {active && (
+            <g>
+              <line x1={active.px} x2={active.px} y1={MARGIN.top} y2={baseline} className="chart-crosshair" />
+              <circle cx={active.px} cy={active.py} r={6} className="chart-point-active" />
+              <g transform={`translate(${tooltipX}, ${MARGIN.top})`}>
+                <rect width={tooltipWidth} height={44} rx={10} className="chart-tooltip-bg" />
+                <text x={12} y={18} className="chart-tooltip-value">
+                  {Math.round(active.y)}
+                  {valueSuffix}
+                </text>
+                <text x={12} y={34} className="chart-tooltip-date">
+                  {formatDate(active.x)}
+                </text>
+              </g>
             </g>
-          </g>
-        )}
+          )}
 
-        <rect
-          x={MARGIN.left}
-          y={MARGIN.top}
-          width={PLOT_WIDTH}
-          height={PLOT_HEIGHT}
-          fill="transparent"
-          onPointerMove={handlePointerMove}
-        />
-      </svg>
+          <rect
+            x={MARGIN.left}
+            y={MARGIN.top}
+            width={plotWidth}
+            height={PLOT_HEIGHT}
+            fill="transparent"
+            onPointerMove={handlePointerMove}
+          />
+        </svg>
+      </div>
       <div className="visually-hidden" aria-live="polite">
         {active ? `${formatDate(active.x)} : ${Math.round(active.y)}${valueSuffix}` : ""}
       </div>
