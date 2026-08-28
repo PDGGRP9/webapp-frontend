@@ -34,6 +34,10 @@ interface LineChartProps {
   /** Horizontal pixels per minute of the domain. Higher = more room per minute-level
    *  bucket, at the cost of a longer horizontally-scrollable canvas. */
   pxPerMinute?: number;
+  /** Draw a dashed vertical marker (with date label) at each local midnight in the
+   *  domain, to call out day changes. Use in place of averageData for a metric like
+   *  step_count where a smoothed "average" doesn't make sense but day boundaries do. */
+  showDayBoundaries?: boolean;
 }
 
 const EMPTY_WIDTH = 900;
@@ -87,6 +91,7 @@ export function LineChart({
   emptyMessage,
   minDomain,
   pxPerMinute = DEFAULT_PX_PER_MINUTE,
+  showDayBoundaries = false,
 }: LineChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const gradientId = useId();
@@ -202,6 +207,15 @@ export function LineChart({
   // One label roughly every 160px so they never crowd, regardless of how wide the canvas is.
   const xLabelCount = Math.max(2, Math.floor(plotWidth / 160));
 
+  const dayBoundaries: number[] = [];
+  if (showDayBoundaries) {
+    const first = new Date(domainStartMs);
+    first.setHours(24, 0, 0, 0); // first midnight strictly after domainStart
+    for (let t = first.getTime(); t < domainEndMs; t += 24 * 60 * 60 * 1000) {
+      dayBoundaries.push(t);
+    }
+  }
+
   const tooltipWidth = 150;
   const tooltipX = active ? Math.min(active.px + 12, width - MARGIN.right - tooltipWidth) : 0;
 
@@ -233,11 +247,26 @@ export function LineChart({
                 <text x={MARGIN.left - 10} y={y + 4} textAnchor="end" className="chart-label">
                   {Math.round(tick)}
                 </text>
+                <text x={width - MARGIN.right + 10} y={y + 4} textAnchor="start" className="chart-label">
+                  {Math.round(tick)}
+                </text>
               </g>
             );
           })}
 
           <line x1={MARGIN.left} x2={width - MARGIN.right} y1={baseline} y2={baseline} className="chart-axis" />
+
+          {dayBoundaries.map((t) => {
+            const x = xScale(t);
+            return (
+              <g key={t}>
+                <line x1={x} x2={x} y1={MARGIN.top} y2={baseline} className="chart-day-boundary" />
+                <text x={x} y={MARGIN.top - 10} textAnchor="middle" className="chart-label">
+                  {new Date(t).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                </text>
+              </g>
+            );
+          })}
 
           {Array.from({ length: xLabelCount + 1 }, (_, i) => {
             const t = domainStartMs + (i / xLabelCount) * spanMs;

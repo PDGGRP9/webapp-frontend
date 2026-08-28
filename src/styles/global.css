@@ -225,6 +225,7 @@ th { color: var(--muted); font-size: 0.84rem; font-weight: 600; }
 .chart-grid { stroke: rgba(255, 255, 255, 0.08); stroke-width: 1; }
 .chart-axis { stroke: rgba(255, 255, 255, 0.16); stroke-width: 1.2; }
 .chart-label { fill: var(--muted); font-size: 13px; }
+.chart-day-boundary { stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 5 5; opacity: 0.5; }
 /* Solid gradient-filled band under the raw, dense samples — the Garmin-style "density" read
    of the raw signal, with the smoothed blue average drawn boldly on top of it. */
 .chart-area-stop-top { stop-color: var(--accent); stop-opacity: 0.6; }

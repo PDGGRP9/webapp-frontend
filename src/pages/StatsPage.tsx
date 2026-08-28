@@ -61,6 +61,10 @@ export function StatsPage() {
 
   const filtered = filterByRange(datas, range);
   const config = RANGE_CONFIG[range];
+  // step_count resets every midnight, so a smoothed "average" doesn't mean anything for
+  // it (see below), and neither does a plain avg/min/max over raw values (min is
+  // trivially ~0, avg mixes numbers from different days).
+  const isStepMetric = metric === "step_count";
 
   // Red curve: bucket-averaged points, spaced out for readability instead of one
   // point per raw sample.
@@ -74,14 +78,12 @@ export function StatsPage() {
     .map((record) => Number(record[metric]))
     .filter((value) => Number.isFinite(value));
 
-  const averageData = bucketAverage(filtered, metric, config.averageBucketMs);
+  // Skip the blue overlay for steps — a "moving average" of a counter that resets to 0
+  // every midnight doesn't read as a trend. Day boundaries (dashed markers) replace it.
+  const averageData = isStepMetric ? [] : bucketAverage(filtered, metric, config.averageBucketMs);
   const domainEnd = new Date();
   const domainStart = new Date(domainEnd.getTime() - config.spanMs);
 
-  // step_count resets every midnight, so a plain avg/min/max over raw values is
-  // meaningless (min is trivially ~0, avg mixes numbers from different days). Instead,
-  // reduce to one "day's total" per day present, then summarize those.
-  const isStepMetric = metric === "step_count";
   const summaryValues = isStepMetric ? dailyTotals(ascending, metric) : rawValues;
   const avg = summaryValues.length ? summaryValues.reduce((sum, value) => sum + value, 0) / summaryValues.length : null;
   const min = summaryValues.length ? Math.min(...summaryValues) : null;
@@ -138,7 +140,8 @@ export function StatsPage() {
           valueSuffix={suffix}
           ariaLabel={`Courbe ${metricLabel(metric)} sur ${range}`}
           emptyMessage="Aucune donnée sur cette période."
-          minDomain={metric === "step_count" ? 0 : undefined}
+          minDomain={isStepMetric ? 0 : undefined}
+          showDayBoundaries={isStepMetric}
         />
         <div className="chart-legend">
           {chartData.length > 0
