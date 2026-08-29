@@ -68,14 +68,16 @@ export function splitByGap<T extends { x: string }>(points: T[], gapMs: number):
 
 /**
  * For a counter that resets every calendar day (e.g. step_count), returns the highest
- * value seen on each UTC day — i.e. that day's running total — one entry per day present.
+ * value seen on each local calendar day — i.e. that day's running total — one entry per
+ * day present.
  */
 export function dailyTotals(records: Measurement[], key: MetricKey): number[] {
   const byDay = new Map<string, number>();
   for (const record of records) {
     const value = Number(record[key]);
     if (!Number.isFinite(value)) continue;
-    const day = record.captured_at.slice(0, 10);
+    const captured = new Date(record.captured_at);
+    const day = `${captured.getFullYear()}-${captured.getMonth()}-${captured.getDate()}`;
     const current = byDay.get(day);
     if (current === undefined || value > current) byDay.set(day, value);
   }

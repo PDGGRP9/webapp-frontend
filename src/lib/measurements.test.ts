@@ -140,6 +140,17 @@ describe("dailyTotals", () => {
   it("returns an empty array for no records", () => {
     expect(dailyTotals([], "step_count")).toEqual([]);
   });
+
+  it("resets at local midnight, not UTC midnight", () => {
+    // In CEST (UTC+2), 22:00Z is already the next local day.
+    const records = [
+      { ...makeMeasurement(1, "2026-01-01T21:00:00Z"), step_count: 4000 }, // 23:00 local, still Jan 1
+      { ...makeMeasurement(2, "2026-01-01T22:30:00Z"), step_count: 100 }, // 00:30 local, already Jan 2
+      { ...makeMeasurement(3, "2026-01-02T05:00:00Z"), step_count: 300 }, // 07:00 local, Jan 2
+    ];
+
+    expect(dailyTotals(records, "step_count").sort((a, b) => a - b)).toEqual([300, 4000]);
+  });
 });
 
 describe("filterByRange", () => {
