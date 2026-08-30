@@ -272,10 +272,6 @@
   .appx .live-chart {
     height: 120px;
   }
-
-  .appx .metrics {
-    grid-template-columns: repeat(4, 1fr);
-  }
 }
 
 .appx .micro {

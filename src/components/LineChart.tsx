@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { formatDate } from "../lib/format";
+import { APP_TIME_ZONE, formatDate, nextZurichMidnightAfter } from "../lib/format";
 import { splitByGap } from "../lib/measurements";
 
 export interface LineChartPoint {
@@ -146,8 +146,14 @@ export function LineChart({
   const spanMs = domainEndMs - domainStartMs;
   const formatXLabel = (iso: string) =>
     spanMs <= 2 * 24 * 60 * 60 * 1000
-      ? new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-      : new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+      ? new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: APP_TIME_ZONE })
+      : new Date(iso).toLocaleDateString("fr-FR", {
+          day: "2-digit",
+          month: "short",
+          hour: "2-digit",
+          minute: "2-digit",
+          timeZone: APP_TIME_ZONE,
+        });
 
   const project = (point: LineChartPoint): ProjectedPoint => ({
     ...point,
@@ -209,10 +215,10 @@ export function LineChart({
 
   const dayBoundaries: number[] = [];
   if (showDayBoundaries) {
-    const first = new Date(domainStartMs);
-    first.setHours(24, 0, 0, 0); // first midnight strictly after domainStart
-    for (let t = first.getTime(); t < domainEndMs; t += 24 * 60 * 60 * 1000) {
+    let t = nextZurichMidnightAfter(domainStartMs);
+    while (t < domainEndMs) {
       dayBoundaries.push(t);
+      t = nextZurichMidnightAfter(t); // day-by-day via calendar math, so DST days (23h/25h) don't drift
     }
   }
 
@@ -262,7 +268,7 @@ export function LineChart({
               <g key={t}>
                 <line x1={x} x2={x} y1={MARGIN.top} y2={baseline} className="chart-day-boundary" />
                 <text x={x} y={MARGIN.top - 10} textAnchor="middle" className="chart-label">
-                  {new Date(t).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                  {new Date(t).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", timeZone: APP_TIME_ZONE })}
                 </text>
               </g>
             );

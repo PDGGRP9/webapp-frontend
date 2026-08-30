@@ -15,7 +15,6 @@ export function DataTable({ rows }: DataTableProps) {
             <th>BPM</th>
             <th>SpO2</th>
             <th>Pas</th>
-            <th>Signal</th>
           </tr>
         </thead>
         <tbody>
@@ -25,7 +24,6 @@ export function DataTable({ rows }: DataTableProps) {
               <td>{formatNumber(row.heart_rate_bpm, " bpm")}</td>
               <td>{formatNumber(row.spo2_percent, " %")}</td>
               <td>{formatNumber(row.step_count)}</td>
-              <td>{formatNumber(row.signal_quality, " %")}</td>
             </tr>
           ))}
         </tbody>

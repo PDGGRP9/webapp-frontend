@@ -58,11 +58,7 @@ export interface Statistics {
   last_measurement_at: string | null;
 }
 
-export type MetricKey =
-  | "heart_rate_bpm"
-  | "spo2_percent"
-  | "step_count"
-  | "signal_quality";
+export type MetricKey = "heart_rate_bpm" | "spo2_percent" | "step_count";
 
 export type RangeKey = "24h" | "7d";
 
