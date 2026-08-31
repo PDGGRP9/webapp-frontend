@@ -1,14 +1,19 @@
 import { describe, expect, it } from "vitest";
 import type { Measurement } from "../api/types";
+import { zurichMidnightMs } from "./format";
 import {
+  dailyStepTotals,
   dailyTotals,
   filterByRange,
+  hourlyStepDeltas,
   latestMeasurement,
   mostRecent,
   sortAscendingByCapturedAt,
   sortDescendingByCapturedAt,
   splitByGap,
 } from "./measurements";
+
+const HOUR_MS = 60 * 60 * 1000;
 
 function makeMeasurement(id: number, capturedAt: string): Measurement {
   return {
@@ -164,5 +169,65 @@ describe("filterByRange", () => {
     const result = filterByRange(records, "24h");
 
     expect(result.map((m) => m.id)).toEqual([1]);
+  });
+});
+
+describe("hourlyStepDeltas", () => {
+  it("returns 24 hourly buckets of steps *taken that hour*, resetting the baseline at local midnight", () => {
+    const aug28Midnight = zurichMidnightMs(2026, 8, 28);
+    const aug29Midnight = zurichMidnightMs(2026, 8, 29);
+    const nowMs = aug29Midnight + 10 * HOUR_MS; // 10:00 local on Aug 29
+
+    const records = [
+      // Last reading of Aug 28, at 23:00 local — day total 8000 before the midnight reset.
+      { ...makeMeasurement(1, new Date(aug28Midnight + 23 * HOUR_MS).toISOString()), step_count: 8000 },
+      // Aug 29 starts counting from 0 again.
+      { ...makeMeasurement(2, new Date(aug29Midnight + 30 * 60 * 1000).toISOString()), step_count: 50 },
+      { ...makeMeasurement(3, new Date(aug29Midnight + 6 * HOUR_MS).toISOString()), step_count: 1200 },
+      // No steps between 09:00 and 09:30 — same cumulative value as the previous reading.
+      { ...makeMeasurement(4, new Date(aug29Midnight + 9 * HOUR_MS + 30 * 60 * 1000).toISOString()), step_count: 1200 },
+    ];
+
+    const buckets = hourlyStepDeltas(records, nowMs);
+
+    expect(buckets).toHaveLength(24);
+    expect(buckets[0].x).toBe(new Date(aug28Midnight + 11 * HOUR_MS).toISOString());
+    expect(buckets[23].x).toBe(new Date(nowMs).toISOString());
+
+    const expectedDeltas = new Array(24).fill(0);
+    expectedDeltas[12] = 8000; // Aug 28, 23:00 — jump from 0 to 8000 within the pre-midnight hour
+    expectedDeltas[13] = 50; // Aug 29, 00:00 — counter reset to 0, then 50 steps
+    expectedDeltas[19] = 1150; // Aug 29, 06:00 — 1200 - 50
+    // index 22 (09:00) stays 0: the 09:30 reading repeats the 06:00 value, no new steps.
+    expect(buckets.map((bucket) => bucket.y)).toEqual(expectedDeltas);
+  });
+
+  it("fills hours with no measurement as 0 instead of omitting them", () => {
+    const nowMs = zurichMidnightMs(2026, 8, 29) + 10 * HOUR_MS;
+    expect(hourlyStepDeltas([], nowMs).every((bucket) => bucket.y === 0)).toBe(true);
+  });
+});
+
+describe("dailyStepTotals", () => {
+  it("returns one bucket per day, zero-filling days with no data", () => {
+    const aug27Midnight = zurichMidnightMs(2026, 8, 27);
+    const aug28Midnight = zurichMidnightMs(2026, 8, 28);
+    const aug29Midnight = zurichMidnightMs(2026, 8, 29);
+    const nowMs = aug29Midnight + 5 * HOUR_MS;
+
+    const records = [
+      { ...makeMeasurement(1, new Date(aug27Midnight + 8 * HOUR_MS).toISOString()), step_count: 500 },
+      { ...makeMeasurement(2, new Date(aug27Midnight + 20 * HOUR_MS).toISOString()), step_count: 4000 },
+      // Aug 28 has no measurements at all.
+      { ...makeMeasurement(3, new Date(aug29Midnight + 3 * HOUR_MS).toISOString()), step_count: 600 },
+    ];
+
+    const buckets = dailyStepTotals(records, 3, nowMs);
+
+    expect(buckets).toEqual([
+      { x: new Date(aug27Midnight).toISOString(), y: 4000 },
+      { x: new Date(aug28Midnight).toISOString(), y: 0 },
+      { x: new Date(aug29Midnight).toISOString(), y: 600 },
+    ]);
   });
 });

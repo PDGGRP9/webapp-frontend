@@ -244,6 +244,8 @@ th { color: var(--muted); font-size: 0.84rem; font-weight: 600; }
 }
 .chart-point-avg { fill: var(--avg-line, #3b82f6); }
 .chart-point-active { fill: var(--accent-2); stroke: var(--bg); stroke-width: 2px; }
+.chart-bar { fill: var(--accent); opacity: 0.82; }
+.chart-bar-active { opacity: 1; filter: drop-shadow(0 0 6px var(--accent)); }
 .chart-end-label { fill: var(--text); font-size: 14px; font-weight: 600; }
 .chart-crosshair { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 4; }
 .chart-tooltip-bg { fill: var(--surface-strong); stroke: var(--border); stroke-width: 1; }

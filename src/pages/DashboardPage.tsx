@@ -2,7 +2,7 @@ import { Avatar } from "../components/Avatar";
 import { useAuth } from "../context/AuthContext";
 import { useMeasurements } from "../context/MeasurementsContext";
 import { formatNumber, headerDate, initials, timeAgo } from "../lib/format";
-import { latestMeasurement, metricStats, mostRecent } from "../lib/measurements";
+import { hourlyStepDeltas, latestMeasurement, metricStats, mostRecent } from "../lib/measurements";
 
 const LIVE_WAVE_PATH =
   "M0 70 l10 0 l7 -46 l8 36 l6 -12 l8 14 l12 6 l49 2" +
@@ -15,6 +15,9 @@ export function DashboardPage() {
   const recentEight = mostRecent(datas, 8);
 
   const heartRate = metricStats(recentEight, "heart_rate_bpm");
+  // step_count only tracks "today so far" (it resets at local midnight), so a true rolling
+  // last-24h total is computed separately by summing the hourly deltas.
+  const steps24h = hourlyStepDeltas(datas).reduce((sum, bucket) => sum + bucket.y, 0);
   const braceletLabel = latest?.bracelet?.display_name || latest?.bracelet?.serial_number || "Aucun bracelet";
   const online = Boolean(latest) && !error;
   const firstName = user?.first_name || user?.username || "";
@@ -96,22 +99,8 @@ export function DashboardPage() {
             <span className="ico" aria-hidden="true">
               👣
             </span>
-            <span className="value">{formatNumber(latest?.step_count)}</span>
-            <span className="name">Pas cumulés</span>
-          </div>
-          <div className="metric is-live">
-            <span className="ico" aria-hidden="true">
-              📶
-            </span>
-            <span className="value">{formatNumber(latest?.signal_quality, " %")}</span>
-            <span className="name">Qualité signal</span>
-          </div>
-          <div className="metric">
-            <span className="ico" aria-hidden="true">
-              🧘
-            </span>
-            <span className="soon">Bientôt</span>
-            <span className="name">Variabilité (HRV)</span>
+            <span className="value">{formatNumber(steps24h)}</span>
+            <span className="name">Pas (24h)</span>
           </div>
         </div>
       </section>
