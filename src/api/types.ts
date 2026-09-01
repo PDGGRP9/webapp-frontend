@@ -12,29 +12,13 @@ export interface User {
 }
 
 export interface BraceletSummary {
-  device_uid: string;
-  serial_number: string;
-  display_name: string;
-}
-
-export interface Bracelet {
-  id: number;
-  user_id: number | null;
-  device_uid: string;
-  serial_number: string;
-  display_name: string;
-  firmware_version: string | null;
-  mac_address: string | null;
-  status: "active" | "inactive" | "lost" | "retired";
-  paired_at: string | null;
-  last_seen_at: string | null;
-  created_at: string;
-  updated_at: string;
+  device_uid: string | null;
+  serial_number: string | null;
+  display_name: string | null;
 }
 
 export interface Measurement {
   id: number;
-  bracelet_id: number;
   captured_at: string;
   heart_rate_bpm: number | null;
   spo2_percent: number | null;

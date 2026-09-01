@@ -18,7 +18,6 @@ const HOUR_MS = 60 * 60 * 1000;
 function makeMeasurement(id: number, capturedAt: string): Measurement {
   return {
     id,
-    bracelet_id: 1,
     captured_at: capturedAt,
     heart_rate_bpm: 70,
     spo2_percent: 98,
