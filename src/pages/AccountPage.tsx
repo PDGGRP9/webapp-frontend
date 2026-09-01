@@ -85,14 +85,14 @@ export function AccountPage() {
         </p>
         <div className="setting">
           <div>
-            <div className="label">{bracelet?.display_name || bracelet?.serial_number || "Aucun bracelet appairé"}</div>
+            <div className="label">{bracelet?.display_name || bracelet?.serial_number || "Aucune mesure reçue"}</div>
             <p className="hint">
               {bracelet ? `Numéro de série ${bracelet.serial_number}` : "En attente d'un premier relevé."}
             </p>
           </div>
           <span className={`device${bracelet ? "" : " offline"}`}>
             <span className="led" />
-            {bracelet ? "Appairé" : "Aucun"}
+            {bracelet ? "Actif" : "Aucun"}
           </span>
         </div>
       </section>
@@ -178,7 +178,7 @@ export function AccountPage() {
       {isDeleteDialogOpen && (
         <ConfirmDialog
           title="Supprimer toutes mes données"
-          description="Cette action est définitive et irréversible : toutes tes mesures seront effacées. Ton bracelet reste appairé à ton compte. Il n'y a pas de retour en arrière possible."
+          description="Cette action est définitive et irréversible : toutes tes mesures seront effacées. Il n'y a pas de retour en arrière possible."
           confirmWord="supprimer"
           confirmLabel="Supprimer définitivement"
           isSubmitting={isDeleting}
