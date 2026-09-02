@@ -1,4 +1,13 @@
-import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type PointerEvent,
+  type UIEvent,
+} from "react";
 import { APP_TIME_ZONE, formatDate, nextZurichMidnightAfter } from "../lib/format";
 import { splitByGap } from "../lib/measurements";
 
@@ -45,7 +54,19 @@ const HEIGHT = 420;
 const MARGIN = { top: 28, right: 28, bottom: 56, left: 64 };
 const PLOT_HEIGHT = HEIGHT - MARGIN.top - MARGIN.bottom;
 const MINUTE_MS = 60 * 1000;
-const DEFAULT_PX_PER_MINUTE = 6;
+const DEFAULT_PX_PER_MINUTE = 0.7;
+
+/** "Mercredi 2 septembre 2026" in APP_TIME_ZONE — the scrolling date header above the chart. */
+function formatDateHeader(ms: number): string {
+  const text = new Date(ms).toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: APP_TIME_ZONE,
+  });
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 
 function niceTicks(min: number, max: number, count: number): number[] {
   if (min === max) return [min];
@@ -99,6 +120,17 @@ export function LineChart({
 
   const domainStartMs = new Date(domainStart).getTime();
   const domainEndMs = new Date(domainEnd).getTime();
+  // Date of the left-most visible instant — updated on scroll (and on mount, once the
+  // chart auto-scrolls to "now"), shown above the chart so the x-axis can stay hour-only
+  // (labels repeat every day over a 7-day span otherwise).
+  const [viewStartMs, setViewStartMs] = useState(domainStartMs);
+
+  function handleScroll(event: UIEvent<HTMLDivElement>) {
+    const el = event.currentTarget;
+    const scrollable = el.scrollWidth - el.clientWidth;
+    const ratio = scrollable > 0 ? el.scrollLeft / scrollable : 0;
+    setViewStartMs(domainStartMs + ratio * (domainEndMs - domainStartMs));
+  }
   // The rendered pixel width is computed directly from the time span — never measured
   // from the DOM (no ResizeObserver race) and never a CSS percentage (those don't
   // reliably resolve inside an `overflow-x: auto` ancestor). viewBox and on-screen
@@ -127,6 +159,13 @@ export function LineChart({
     const el = scrollRef.current;
     if (!el) return;
     el.scrollLeft = el.scrollWidth;
+    const scrollable = el.scrollWidth - el.clientWidth;
+    const ratio = scrollable > 0 ? el.scrollLeft / scrollable : 0;
+    setViewStartMs(domainStartMs + ratio * (domainEndMs - domainStartMs));
+    // width and data.length are the only inputs that change the scroll geometry; the domain
+    // bounds drift forward by a few ms every render but the span (and so `width`) is fixed,
+    // so keying off them would needlessly snap the scroll back to "now" on every poll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [width, data.length]);
 
   if (!scales || (data.length === 0 && averageData.length === 0)) {
@@ -144,16 +183,9 @@ export function LineChart({
   const { xScale, yScale, yMin, yMax } = scales;
   const baseline = yScale(yMin);
   const spanMs = domainEndMs - domainStartMs;
+  // Hour-only labels, whatever the span: the day is carried by the scrolling date header above.
   const formatXLabel = (iso: string) =>
-    spanMs <= 2 * 24 * 60 * 60 * 1000
-      ? new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: APP_TIME_ZONE })
-      : new Date(iso).toLocaleDateString("fr-FR", {
-          day: "2-digit",
-          month: "short",
-          hour: "2-digit",
-          minute: "2-digit",
-          timeZone: APP_TIME_ZONE,
-        });
+    new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: APP_TIME_ZONE });
 
   const project = (point: LineChartPoint): ProjectedPoint => ({
     ...point,
@@ -227,7 +259,10 @@ export function LineChart({
 
   return (
     <div className="chart-wrap">
-      <div className="chart-scroll" ref={scrollRef}>
+      <div className="chart-date-header" aria-hidden="true">
+        {formatDateHeader(viewStartMs)}
+      </div>
+      <div className="chart-scroll" ref={scrollRef} onScroll={handleScroll}>
         <svg
           viewBox={`0 0 ${width} ${HEIGHT}`}
           role="img"

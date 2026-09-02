@@ -8,6 +8,7 @@ import {
   hourlyStepDeltas,
   latestMeasurement,
   mostRecent,
+  movingAverage,
   sortAscendingByCapturedAt,
   sortDescendingByCapturedAt,
   splitByGap,
@@ -228,5 +229,46 @@ describe("dailyStepTotals", () => {
       { x: new Date(aug28Midnight).toISOString(), y: 0 },
       { x: new Date(aug29Midnight).toISOString(), y: 600 },
     ]);
+  });
+});
+
+describe("movingAverage", () => {
+  const MINUTE_MS = 60 * 1000;
+  const base = Date.parse("2026-01-01T12:00:00Z");
+  const at = (offsetMin: number, hr: number): Measurement => ({
+    ...makeMeasurement(offsetMin, new Date(base + offsetMin * MINUTE_MS).toISOString()),
+    heart_rate_bpm: hr,
+  });
+
+  it("averages every raw sample inside the window, not just the endpoints", () => {
+    // Five samples one minute apart within a single 30-min window: mean = 470/5 = 94.
+    // Connecting only the first (60) and last (140) sample would never yield 94.
+    const records = [at(0, 60), at(1, 90), at(2, 90), at(3, 90), at(4, 140)];
+    const series = movingAverage(records, "heart_rate_bpm", 30 * MINUTE_MS, 5 * MINUTE_MS);
+    expect(series.length).toBeGreaterThan(0);
+    // Every emitted point is the mean of all 5 samples = 94, never 60 or 140.
+    for (const point of series) expect(point.y).toBeCloseTo(94, 5);
+  });
+
+  it("stays a dense curve (many points) even from a short burst", () => {
+    // A 6-minute burst of data -> bucketAverage(15min) would give 1 point; movingAverage
+    // resamples every 5 min across the burst + trailing step.
+    const records = [at(0, 70), at(2, 72), at(4, 74), at(6, 76)];
+    const series = movingAverage(records, "heart_rate_bpm", 30 * MINUTE_MS, 5 * MINUTE_MS);
+    expect(series.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("emits nothing across a gap wider than the window, so splitByGap can break the line", () => {
+    const records = [at(0, 70), at(2, 70), at(120, 90), at(122, 90)];
+    const series = movingAverage(records, "heart_rate_bpm", 30 * MINUTE_MS, 5 * MINUTE_MS);
+    const gaps = series
+      .slice(1)
+      .map((point, index) => Date.parse(point.x) - Date.parse(series[index].x));
+    // At least one step-to-step jump far bigger than the 5-min cadence (the empty gap).
+    expect(Math.max(...gaps)).toBeGreaterThan(30 * MINUTE_MS);
+  });
+
+  it("returns [] for no finite samples", () => {
+    expect(movingAverage([], "heart_rate_bpm", 30 * MINUTE_MS, 5 * MINUTE_MS)).toEqual([]);
   });
 });

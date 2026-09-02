@@ -36,7 +36,7 @@ async function request<T>(
   try {
     response = await fetch(`${baseUrl}${path}`, { ...rest, headers: finalHeaders });
   } catch {
-    throw new ApiError(0, "Impossible de joindre le back-end. Vérifie l'URL et la connexion réseau.");
+    throw new ApiError(0, "Hors ligne");
   }
 
   const text = await response.text();
@@ -114,7 +114,7 @@ export async function exportMyData(baseUrl: string, token: string, format: Expor
       headers: { Authorization: `Bearer ${token}` },
     });
   } catch {
-    throw new ApiError(0, "Impossible de joindre le back-end. Vérifie l'URL et la connexion réseau.");
+    throw new ApiError(0, "Hors ligne");
   }
 
   if (!response.ok) {

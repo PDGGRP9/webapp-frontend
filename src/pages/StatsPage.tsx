@@ -10,6 +10,7 @@ import {
   dailyTotals,
   filterByRange,
   hourlyStepDeltas,
+  movingAverage,
   sortAscendingByCapturedAt,
   sortDescendingByCapturedAt,
 } from "../lib/measurements";
@@ -30,17 +31,23 @@ const DAYS_IN_WEEK = 7;
 // bpm/spo2 are always plotted over the last 7 days now (see STEP_RANGE_OPTIONS above).
 // - pointBucketMs: bucket size for the red "raw" curve — never one point per sample (a
 //   black smear at high sampling rates), bucket-averaged into a readable density instead.
-// - averageBucketMs: bucket size for the blue moving-average overlay.
-// - rawGapMs / averageGapMs: how far apart two consecutive *bucketed* points must be
-//   before the chart draws a gap instead of a line (i.e. "no data for a while"). Older
-//   days are only sampled every 5 minutes, so this has to clear that normal sampling
-//   interval or every routine gap reads as a "hole".
+// - averageWindowMs / averageStepMs: the blue overlay is a sliding-window mean (see
+//   `movingAverage`) — at every `averageStepMs` it averages all raw samples within
+//   ±averageWindowMs/2, so it stays a smooth dense curve even when the data is bursty.
+// - rawGapMs / averageGapMs: how far apart two consecutive points must be before the
+//   chart draws a gap instead of a line (i.e. "no data for a while"). Older days are
+//   only sampled every 5 minutes, so this has to clear that normal sampling interval
+//   or every routine gap reads as a "hole".
+// - pxPerMinute: keeps the 7-day canvas to a few screen-widths of horizontal scroll
+//   (the date header above the chart tracks the left edge as you scroll).
 const LINE_CHART_CONFIG = {
   spanMs: DAYS_IN_WEEK * DAY_MS,
   pointBucketMs: MINUTE_MS,
   rawGapMs: 8 * MINUTE_MS,
-  averageBucketMs: 15 * MINUTE_MS,
+  averageWindowMs: 30 * MINUTE_MS,
+  averageStepMs: 5 * MINUTE_MS,
   averageGapMs: 20 * MINUTE_MS,
+  pxPerMinute: 0.7,
 };
 
 function zurichHour(iso: string): number {
@@ -56,7 +63,7 @@ function capitalize(text: string): string {
 }
 
 export function StatsPage() {
-  const { datas } = useMeasurements();
+  const { datas, error } = useMeasurements();
   const [metric, setMetric] = useState<MetricKey>("heart_rate_bpm");
   const [stepRange, setStepRange] = useState<RangeKey>("24h");
   const [showTable, setShowTable] = useState(false);
@@ -79,7 +86,7 @@ export function StatsPage() {
   const chartData: LineChartPoint[] = isStepMetric ? [] : bucketAverage(filtered, metric, LINE_CHART_CONFIG.pointBucketMs);
   const averageData: LineChartPoint[] = isStepMetric
     ? []
-    : bucketAverage(filtered, metric, LINE_CHART_CONFIG.averageBucketMs);
+    : movingAverage(filtered, metric, LINE_CHART_CONFIG.averageWindowMs, LINE_CHART_CONFIG.averageStepMs);
   const domainEnd = new Date();
   const domainStart = new Date(domainEnd.getTime() - LINE_CHART_CONFIG.spanMs);
 
@@ -103,7 +110,7 @@ export function StatsPage() {
       <header className="appbar">
         <div>
           <h1>Historique</h1>
-          <p className="sub">{headerDate()}</p>
+          <p className="sub">{error ? error : headerDate()}</p>
         </div>
       </header>
 
@@ -177,6 +184,7 @@ export function StatsPage() {
             domainEnd={domainEnd.toISOString()}
             gapThresholdMs={LINE_CHART_CONFIG.rawGapMs}
             averageGapThresholdMs={LINE_CHART_CONFIG.averageGapMs}
+            pxPerMinute={LINE_CHART_CONFIG.pxPerMinute}
             valueSuffix={suffix}
             ariaLabel={`Courbe ${metricLabel(metric)} sur 7 jours`}
             emptyMessage="Aucune donnée sur cette période."
