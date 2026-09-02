@@ -86,6 +86,54 @@ export function dailyTotals(records: Measurement[], key: MetricKey): number[] {
   return [...byDay.values()];
 }
 
+/**
+ * Resampled sliding-window mean of `key`, oldest first — the blue "average" overlay.
+ *
+ * Unlike `bucketAverage` (one mean per fixed 15-min slot, which collapses to a single
+ * point when a burst of activity is short), this walks the whole time span at a fixed
+ * `stepMs` cadence and, at each step, averages *every* raw sample within `±windowMs/2`.
+ * The two-pointer sweep keeps it O(n + span/step). Steps whose window caught no sample
+ * are skipped, so a real gap in the data still breaks the line once it goes back through
+ * `splitByGap`.
+ */
+export function movingAverage(
+  records: Measurement[],
+  key: MetricKey,
+  windowMs: number,
+  stepMs: number,
+): { x: string; y: number }[] {
+  const samples: { t: number; v: number }[] = [];
+  for (const record of records) {
+    const value = Number(record[key]);
+    if (!Number.isFinite(value)) continue;
+    samples.push({ t: new Date(record.captured_at).getTime(), v: value });
+  }
+  if (samples.length === 0) return [];
+  samples.sort((left, right) => left.t - right.t);
+
+  const half = windowMs / 2;
+  const firstT = samples[0].t;
+  const lastT = samples[samples.length - 1].t;
+
+  const points: { x: string; y: number }[] = [];
+  let lo = 0;
+  let hi = 0;
+  let sum = 0;
+  for (let t = firstT; t <= lastT + stepMs; t += stepMs) {
+    while (hi < samples.length && samples[hi].t <= t + half) {
+      sum += samples[hi].v;
+      hi += 1;
+    }
+    while (lo < hi && samples[lo].t < t - half) {
+      sum -= samples[lo].v;
+      lo += 1;
+    }
+    const count = hi - lo;
+    if (count > 0) points.push({ x: new Date(t).toISOString(), y: sum / count });
+  }
+  return points;
+}
+
 /** Buckets records into fixed-size time windows and averages `key` within each — oldest first. */
 export function bucketAverage(
   records: Measurement[],
@@ -110,9 +158,10 @@ export function bucketAverage(
 }
 
 /**
- * step_count is a running total that resets to 0 at local midnight (see `dailyTotals`), so
- * "steps taken this hour" is the *increase* of that counter within the hour, not the counter
- * itself. Returns exactly 24 hourly buckets ending at the hour containing `nowMs`, oldest
+ * step_count is the bracelet's own running total for the day — the firmware resets it to 0 at
+ * local midnight and nothing here re-derives it. This helper only *reads* that counter to show
+ * "steps taken this hour" = its increase within the hour (a display-only breakdown, it never
+ * changes a total). Returns exactly 24 hourly buckets ending at the hour containing `nowMs`, oldest
  * first — hours with no measurement (or no walking) come back as 0 rather than being omitted,
  * so the bar chart always renders a full 24 bars.
  */
